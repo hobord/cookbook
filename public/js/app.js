@@ -73,6 +73,11 @@ var s, app = {
 			    this.render();
 			    this.renderLabelsGroups();
 			},
+			remove: function() {
+				this.$el.empty().off(); /* off to unbind the events */
+				this.stopListening();
+				return this;
+			},
 			render: function() {
 				var html = this.template(this.model.toJSON());
 				this.$el.html(html);
@@ -133,7 +138,7 @@ var s, app = {
 				app.spinnerStart();
 				var currentUser = Parse.User.current();
 
-				var selectedLabels = []
+				var selectedLabels = [];
 				for (var i = this.labelSelectors.length - 1; i >= 0; i--) {
 					selectedLabels = _.union(selectedLabels, this.labelSelectors[i].selectedLabels);
 				};
@@ -150,18 +155,34 @@ var s, app = {
 				// this.model.save();
 				Parse.Object.saveAll(this.model).then(function(model) {
 					var labels = model.get('labels'); 
-					if (_.isArray(labels) && model.get('labels').length)  {
+					var ids = [];
+					if (_.isArray(labels) && labels.length)  {
 						var labelsRelation = model.relation('labelRelation');
-						labelsRelation.add(model.get('labels'));
-						model.save();
+						labelsRelation.add(labels);
+						for (var i = 0; i < labels.length; i++) {
+							ids.push(labels[i].id);
+						};
 					}
+					model.set('labelsId', ids);
+					model.save();
 					app.loadLabels();
 					app.spinnerStop();
 					app.viewReceipt(model);
 				})
+
+				// this.unbind();
+				// this.undelegateEvents();
+				// this.$el.empty(); 
+				this.remove();
 			},
 			onDiscard:function() {
 				// TODO
+				// this.unbind();
+				// this.undelegateEvents();
+				// this.$el.empty(); 
+				this.remove();
+				app.switchLayout('list');
+				delete this;
 			}
 		})
 
@@ -209,14 +230,76 @@ var s, app = {
 			}
 		});
 
-		// app.LabelView = Backbone.View.extend({
+		app.NavigationLabelView = Backbone.View.extend({
+			tagName : 'a',
+			className : 'navigation__link',
+			template  : _.template($('#NavigationLabelView-tmpl').html()),
+			events : {
+				'click'    : 'select',
+			},
+			initialize: function() {
+				this.listenTo(this.model, "change", this.render);
+			},
+			render: function() {
+				var html = this.template(this.model.toJSON());
+				this.$el.html(html);
+				return this;
+			},
+			select: function(e) {
+				console.log(this.model);
+				var index = _.indexOf(app.receiptsFilter.labels, this.model);
+				if (index == -1) {
+					app.receiptsFilter.labels.push(this.model);
+				}
+				else {
+					app.receiptsFilter.labels.splice(index, 1);
+				}
+				app.listReceipts();
+				$(this.$el).find('i').toggleClass('mdl-color-text--light-green-400');
+				$(this.$el).find('i').toggleClass('mdl-color-text--light-green-900');
+			}
+		});
 
-		// });
+		app.NavigationLabelGroupItemView = Backbone.View.extend({
+			tagName: 'div',
+			className : 'app-navigation mdl-navigation mdl-color--light-green-800',
+			template: _.template($('#NavigationLabelGroupItemView-tmpl').html()),
+			events : {
+				'click .groupName'    : 'toggleShow',
+			},
+			initialize: function() {
+			    this.listenTo(this.collection, 'sync change', this.render);
+			    // this.render();
+			},
+			toggleShow: function() {
+				// this.$el.find('a').toggle();
+				this.$el.find('.labels').toggleClass('hidden');
+				var icon = this.$el.find('i')[0];
+				if ($(this.$el.find('.labels')[0]).hasClass('hidden')) {
+					$(icon).text('chevron_right');	
+				}
+				else {
+					$(icon).text('expand_more');
+				}
+			},
+			render: function() {
+				this.$el.empty();
+				var html = this.template(this.model.toJSON());
+				this.$el.append(html);
 
-		app.LabelGroupView = Backbone.View.extend({
+				var labels = app.labelCollection;
+				for (var i = labels.models.length - 1; i >= 0; i--) {
+					if (labels.models[i].get('labelgroup').id == this.model.id) {
+						var navigationLabelView = new app.NavigationLabelView({model:labels.models[i]});
+					  	this.$el.find('.labels').append(navigationLabelView.render().$el);
+					}
+				};
+				return this;
+			}
+		});
+
+		app.NavigationLabelGroupView = Backbone.View.extend({
 			el: '#LabelGroupsViewPlaceholder',
-			template: _.template($('#LabelGroupsView-tmpl').html()),
-
 			initialize: function() {
 			    this.listenTo(this.collection, 'sync change', this.render);
 			    this.render();
@@ -224,25 +307,14 @@ var s, app = {
 			render: function() {
 				this.$el.empty();
 				this.collection.each(function(model) {
-					// var item = new MuppetsListItemView({model: model});
-					// $list.append(item.render().$el);
-					var item = $("<h6>"+model.get('name')+"</h6>");
-					this.$el.append(item);
-
-					var labels = app.labelCollection;
-					for (var i = labels.models.length - 1; i >= 0; i--) {
-						if (labels.models[i].get('labelgroup').id==model.id) {
-					  	// console.log(labels[i]);
-						  	var element = '<a class="mdl-navigation__link" href=""><i class="mdl-color-text--light-green-400 material-icons">label</i>'+labels.models[i].get('name')+'</a>';
-						  	// item = $(item).after(element);
-						  	$(element).insertAfter(item);
-						}
-					};
+					var item = new app.NavigationLabelGroupItemView({model: model});
+					this.$el.append(item.render().$el);
 			    }, this);
 
-			    return this;
+				return this;
 			}
 		})
+
 
 		//start
 		app.startUser();
@@ -312,11 +384,11 @@ app.listReceipts();
 				for (var j = app.labelGroupCollection.models.length - 1; j >= 0; j--) {
     				var labelQuery = new Parse.Query(app.Label);
 		    		labelQuery.equalTo("user", currentUser);
-		    		// labelQuery.equalTo("labelgroup", app.labelGroupCollection.models[j]);
 		    		labelQuery.find({
 		    			success: function(labels) {
 		    				app.labelCollection = new Parse.Collection(labels, {model: app.Label});
-		    				var labelGroupView = new app.LabelGroupView({collection: app.labelGroupCollection});
+		    				var navigationLabelGroupView = new app.NavigationLabelGroupView({collection: app.labelGroupCollection});
+		    				// var labelGroupView = new app.NavigationLabelGroupView({collection: app.labelGroupCollection});
 		    			}
 		    		});
 		    	}
@@ -465,14 +537,18 @@ app.listReceipts();
     	//labels
     	var labels = app.receiptsFilter.labels;
 		if (Array.isArray(labels) && labels.length) {
-			var qLabels = new Parse.Query(app.Label);
-			qLabels.containsAll("label", labels);
-			qReceipt.matchesKeyInQuery("label", qLabels);
+			var ids = [];
+			for (var i = 0; i < labels.length; i++) {
+				ids.push(labels[i].id);
+			};
+			// qReceipt.containsAll("labelsId", ids);
+			qReceipt.containedIn("labelsId", ids);
+			// qReceipt.matchesKeyInQuery("label", labels);
 		}
 
 		if(app.receiptsFilter.allPublicAcces == false) {
 			// qReceipt.include('user');
-			qReceipt.equalTo('user', currentUser);
+			// qReceipt.equalTo('user', currentUser);
 		}
 		else {
 			//TODO set public filter
@@ -540,4 +616,56 @@ app.listReceipts();
 	}
 }
 
-		
+app.receiptsFiltermanager = {
+	filters: {
+		labels         : [],
+		text          : '',
+		lang          : [],
+		favorites      : false,
+		allPublicAcces : false,
+		user           : null,
+		myPrivate      : false,
+		orderBy        : 'updatedAt',
+		orderAsc       : 'desc',
+		limit          : 21,
+		start          : 0
+	},
+
+	doSearch: function() {
+		app.listReceipts(this.filters);
+	},
+
+	addLabel: function(label) {
+		var index = _.indexOf(this.filters.labels, label);
+		if (index == -1) {
+			this.filters.labels.push(label);
+		}
+	},
+
+	removeLabel: function(label) {
+		var index = _.indexOf(this.filters.labels, label);
+		if (index != -1) {
+			this.filters.labels.splice(index, 1);
+		}
+	},
+
+	toggleLabel: function(label) {
+		var index = _.indexOf(this.filters.labels, label);
+		if (index == -1) {
+			this.filters.labels.push(label);
+		}
+		else {
+			this.filters.labels.splice(index, 1);
+		}
+	},
+
+	setSearchText: function(text) {
+		this.filters.text = text;
+	},
+
+	setSearchLang: function(lang) {
+		this.filters.lang = lang;
+	},
+
+
+}

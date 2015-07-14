@@ -33,7 +33,8 @@
  -->
 
   <!-- Parse.com -->
-    <script src="//www.parsecdn.com/js/parse-1.4.2.min.js"></script>
+    <!-- <script src="//www.parsecdn.com/js/parse-1.4.2.min.js"></script> -->
+    <script src="//www.parsecdn.com/js/parse-1.4.2.js"></script>
     <!-- <script type="text/javascript" src="js/parse-1.4.2.min.js"></script> -->
   
   <!-- Plugins -->
@@ -49,7 +50,6 @@
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
     <!-- <link rel="stylesheet" type="text/css" href="bootstrap/3.3.5/css/bootstrap.min.css"> -->
     <!-- <link rel="stylesheet" type="text/css" href="bootstrap/3.3.5/css/bootstrap-theme.min.css"> -->
-    <link rel="stylesheet" href="css/simple-sidebar.css">
     
     <script type="text/javascript" src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
     <!-- <script type="text/javascript" src="bootstrap/3.3.5/js/bootstrap.min.js"></script> -->
@@ -134,14 +134,16 @@
         </header>
         <nav class="app-navigation mdl-navigation mdl-color--light-green-800">
 
-          <a class="mdl-navigation__link" href=""><i class="mdl-color-text--light-green-400 material-icons">home</i>Home</a>
-          <a class="mdl-navigation__link" href=""><i class="mdl-color-text--light-green-400 material-icons">favorite</i>Favorites</a>
-          <!-- <a class="mdl-navigation__link" href=""><i class="mdl-color-text--light-green-400 material-icons">label</i>Labels</a> -->
+          <a class="mdl-navigation__link topnav" href=""><i class="mdl-color-text--light-green-400 material-icons">cloud</i>All</a>
+          <a class="mdl-navigation__link topnav" href=""><i class="mdl-color-text--light-green-900 material-icons">favorite</i>Favorites</a>
+          <a class="mdl-navigation__link topnav" href=""><i class="mdl-color-text--light-green-900 material-icons">face</i>My</a>
+          <a class="mdl-navigation__link topnav" href=""><i class="mdl-color-text--light-green-900 material-icons">cloud_upload</i>Shared</a>
+          <!-- <a class="mdl-navigation__link" href=""><i class="mdl-color-text--light-green-900 material-icons">label</i>Labels</a> -->
           <div id="LabelGroupsViewPlaceholder"></div>
-          <!-- <a class="mdl-navigation__link" href=""><i class="mdl-color-text--light-green-400 material-icons">list</i>Edit Catalog</a> -->
+          <!-- <a class="mdl-navigation__link" href=""><i class="mdl-color-text--light-green-900 material-icons">list</i>Edit Catalog</a> -->
           <div class="mdl-layout-spacer"></div>
-          <a class="btnSignIn mdl-navigation__link" href=""><i class="mdl-color-text--light-green-400 material-icons">person</i>Sign In / Login</a>
-          <a class="mdl-navigation__link" href=""><i class="mdl-color-text--light-green-400 material-icons">help_outline</i></a>
+          <a class="btnSignIn mdl-navigation__link" href=""><i class="mdl-color-text--light-green-900 material-icons">person</i>Sign In / Login</a>
+          <a class="mdl-navigation__link" href=""><i class="mdl-color-text--light-green-900 material-icons">help_outline</i></a>
         </nav>
       </div>
       <main class="mdl-layout__content mdl-color--grey-100">
@@ -164,8 +166,13 @@
   </body>
 
 <!-- templates -->
-<script type="text/template" id="LabelGroupsView-tmpl">
-<h2><%= name %></h2>
+<script type="text/template" id="NavigationLabelGroupItemView-tmpl">
+<label class="groupName"><i class="material-icons">chevron_right</i><%= name %></label>
+<div class="labels hidden"></div>
+</script>
+
+<script type="text/template" id="NavigationLabelView-tmpl">
+<i class="mdl-color-text--light-green-900 material-icons">label</i><%= name %>
 </script>
 
 <script type="text/template" id="editReceipt-tmpl">
@@ -208,9 +215,11 @@
       <a class="btnRead mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
         Read
       </a>
+<% if (user.objectId !== Parse.User.current().id) {  %>
       <a class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
         Save to My Book
       </a>
+<% } %>
       <a class="btn-add-to-favorites pull-right mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
         <i class="material-icons">favorite_border</i>
       </a>
