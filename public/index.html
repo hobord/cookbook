@@ -8,14 +8,16 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- <meta name="mobile-web-app-capable" content="yes"> -->
-    <!-- <link rel="icon" sizes="192x192" href="../assets/android-desktop.png"> -->
+    <link rel="icon" sizes="192x192" href="/icon_192.png" />
     <!-- Add to homescreen for Safari on iOS -->
-<!--     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="Material Design Lite">
-    <link rel="apple-touch-icon" href="../assets/ios-desktop.png">
- -->
-    <!-- <link rel="shortcut icon" href="../assets/favicon.png" /> -->
+    <!-- <meta name="apple-mobile-web-app-capable" content="yes"> -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="green">
+    <meta name="apple-mobile-web-app-title" content="My Cookbook">
+    <link rel="apple-touch-icon" href="/icon_512.png" />
+
+    <link rel="shortcut icon" sizes="16x16" type="image/png" href="/icon_16.png" />
+    <link rel="shortcut icon" sizes="16x16" type="image/png" href="http://cookbook.local/icon_16.png" />
+
     <!-- <meta name="theme-color" content="#263238"> -->
     <meta name="application-name" content="My Cookbook">
     <meta name="description" content="Cookbook web application">
@@ -97,6 +99,7 @@
       <header class="app-header mdl-layout__header mdl-color--white mdl-color--grey-100 mdl-color-text--grey-600">
         <div class="mdl-layout__header-row">
           <span class="mdl-layout-title">My Cookbook</span>
+          <span class="mdl-layout-title recipeName"></span>
           <div class="mdl-layout-spacer"></div>
           <div class="mdl-spinner mdl-js-spinner appSpinner"></div>
           <div class="mdl-textfield mdl-js-textfield mdl-textfield--expandable">
@@ -147,17 +150,19 @@
         </nav>
       </div>
       <main class="mdl-layout__content mdl-color--grey-100">
-        <div class="mdl-grid app-content">
-          <div id="receiptResultsList" class="row">
+        <div class="mdl-grid app-content grid">
+          <div id="recipeResultsList" class="row">
 <!-- <div class="clearfix visible-lg-block"></div> -->
           </div>
-          <!-- #receiptResultsList -->
+          <!-- #recipeResultsList -->
 
-          <button class="mdl-button mdl-js-button mdl-button--fab mdl-button--colored" id="btnCreateReceipt">
+          <button class="mdl-button mdl-js-button mdl-button--fab mdl-button--colored" id="btnCreateRecipe">
             <i class="material-icons">add</i>
           </button>
 
-          <div id="editReceiptPlaceholder"  class="mdl-cell mdl-cell--12-col"></div>
+          <!-- <div id="editRecipePlaceholder"  class="mdl-cell mdl-cell--8-col"></div> -->
+          <div id="viewRecipePlaceholder"  class="col-xs-12 col-md-8"></div>
+          <div id="editRecipePlaceholder"  class="col-xs-12 col-md-8"></div>
         </div>
         <!-- /app-content -->
       </main>
@@ -165,7 +170,14 @@
     <script src="//storage.googleapis.com/code.getmdl.io/1.0.0/material.min.js"></script>
   </body>
 
+
+
+
 <!-- templates -->
+
+
+
+
 <script type="text/template" id="NavigationLabelGroupItemView-tmpl">
 <label class="groupName"><i class="material-icons">chevron_right</i><%= name %></label>
 <div class="labels hidden"></div>
@@ -175,51 +187,28 @@
 <i class="mdl-color-text--light-green-900 material-icons">label</i><%= name %>
 </script>
 
-<script type="text/template" id="editReceipt-tmpl">
-<div id="editReceipt">
-  <div class="thumbnail">
-    <div>
-      <label for="editReceiptName" class="mdl-textfield__label">Name</label>
-      <input id="editReceiptName" name="name" class="form-control name" value="<%= name %>">
-    </div>
-    <label for="editReceiptIngredients" class="mdl-textfield__label">Ingredients</label>
-    <textarea name="editReceiptIngredients" id="editReceiptIngredients" class="form-control mdl-textfield__input ingredients" rows="5" required="required"><%= ingredients %></textarea>
-    <label for="editReceiptDescription" class="mdl-textfield__label">Receipt</label>
-    <textarea name="editReceiptDescription" id="editReciptDescription" class="form-control mdl-textfield__input description" rows="10" required="required"><%= description %></textarea>
-    <label for="editReceiptLabels" class="mdl-textfield__label">Labels</label>
-    <!-- <textarea name="editReceiptLabels" id="editReceiptLabels" class="form-control mdl-textfield__input" rows="2"></textarea>-->
-    <div class="labelGroups"></div>
-    <div id="editReceiptLabels"></div>
-    <div class="footer">
-      <button id="btnEditReceiptDiscard" type="button" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">Discard</button>
-      <button id="btnEditReceiptSave" type="button" class="pull-right mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">Save changes</button>
-    </div>
-  </div>
-</div>
-</script>
-<!-- /#editReceipt panel --> 
 
-<script type="text/template" id="receiptListView-tmpl">
-  <div class="receipt-card-content mdl-shadow--2dp">
+<script type="text/template" id="recipeListView-tmpl">
+  <div class="recipeListItem recipe-card-content mdl-shadow--2dp">
     <div class="mdl-card__title">
-      <img src="<%= avatar %>" alt="<%= author %>" class="img-circle app-avatar-small">
-      <h2 class="mdl-card__title-text"><%= name %></h2>
+      <img src="<%= avatar %>" alt="<%= author %>" title="<%= author %>" class="img-circle app-avatar-small">
+      <h2 class="mdl-card__title-text name"><%= name %></h2>
     </div>
     <div class="thumbnail">
-      <img src="images/krumplis3.jpg" alt="...">
+      <img src="images/krumplis3.jpg" alt="<%= name %>" title="<%= name %>" class="image">
     </div>
-    <div class="mdl-card__supporting-text receipt-short-desc">
+    <div class="mdl-card__supporting-text recipe-short-desc">
       <%= description %>
     </div>
     <div class="mdl-card__actions mdl-card--border">
       <a class="btnRead mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
         Read
       </a>
-<% if (user.objectId !== Parse.User.current().id) {  %>
+  <% if (user.objectId !== Parse.User.current().id) {  %>
       <a class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
         Save to My Book
       </a>
-<% } %>
+  <% } %>
       <a class="btn-add-to-favorites pull-right mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
         <i class="material-icons">favorite_border</i>
       </a>
@@ -232,3 +221,84 @@
   </div>
 </script> 
 </html>
+
+<script type="text/template" id="viewRecipe-tmpl">
+<div id="viewRecipe">
+  <div class="recipe-card-content mdl-shadow--2dp">
+    <div class="mdl-card__title">
+      <img src="<%= avatar %>" alt="<%= author %>" title="<%= author %>" class="img-circle app-avatar-small">
+      <h2 class="mdl-card__title-text name"><%= name %></h2>
+    </div>
+    <div class="thumbnail">
+      <img src="images/krumplis3.jpg" alt="<%= name %>" title="<%= name %>" class="image">
+    </div>
+    <div id="labels"></div>
+    <div class="mdl-card__supporting-text recipe-short-desc">
+      <%= description %>
+    </div>
+    <div class="mdl-card__supporting-text recipe-short-desc">
+      <%= ingredients %>
+    </div>
+    <div class="mdl-card__supporting-text recipe-short-desc">
+      <%= directions %>
+    </div>
+    <div class="labels mdl-card--border">
+
+    </div>
+    <div class="mdl-card__actions mdl-card--border">
+  <% if (user.objectId !== Parse.User.current().id) {  %>
+      <a class="btnEdit mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
+        Save to My Book
+      </a>
+  <%  } else { %>
+      <a class="btnEdit mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
+        Edit
+      </a>
+  <% } %>
+      <a class="btn-add-to-favorites pull-right mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
+        <i class="material-icons">favorite_border</i>
+      </a>
+      <button class="pull-right mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect">
+        <i class="material-icons">share</i>
+      </button>
+    </div>
+    <div class="mdl-card__menu">
+      <button type="button" class="close pull-right" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <a class="btn-add-to-favorites pull-right mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
+        <i class="material-icons">favorite_border</i>
+      </a>
+      <button class="mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect">
+        <i class="material-icons">share</i>
+      </button>
+    </div>
+  </div>
+</div>
+</script>
+<!-- /#viewRecipe-tmpl template --> 
+
+
+<script type="text/template" id="editRecipe-tmpl">
+<div id="editRecipe">
+  <div class="thumbnail">
+    <div>
+      <label for="editRecipeName" class="name">Name</label>
+      <input id="editRecipeName" name="name" class="form-control name" value="<%= name %>">
+    </div>
+    <label for="editRecipeDescription" class="">Description</label>
+    <textarea name="editRecipeDescription" id="editReciptDescription" class="form-control mdl-textfield__input description" rows="3" required="required"><%= description %></textarea>
+    <label for="editRecipeIngredients" class="">Ingredients</label>
+    <textarea name="editRecipeIngredients" id="editRecipeIngredients" class="form-control mdl-textfield__input ingredients" rows="5" required="required"><%= ingredients %></textarea>
+    <label for="editRecipeDirections" class="">Directions</label>
+    <textarea name="editRecipeDirections" id="editReciptDirections" class="form-control mdl-textfield__input directions" rows="10" required="required"><%= directions %></textarea>
+    <label for="editRecipeLabels" class="">Labels</label>
+    <!-- <textarea name="editRecipeLabels" id="editRecipeLabels" class="form-control mdl-textfield__input" rows="2"></textarea>-->
+    <div class="labelGroups"></div>
+    <div id="editRecipeLabels"></div>
+    <div class="footer">
+      <button id="btnEditRecipeDiscard" type="button" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">Discard</button>
+      <button id="btnEditRecipeSave" type="button" class="pull-right mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">Save changes</button>
+    </div>
+  </div>
+</div>
+</script>
+<!-- /#editRecipe-tmpl panel --> 

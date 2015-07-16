@@ -15,19 +15,6 @@ var s, app = {
     },
     initalizers: function() {
     	app.facebookUser = null;
-    	app.receiptsFilter = {
-			labels         : [],
-			texts          : '',
-			langs          : [],
-			favorites      : false,
-			allPublicAcces : false,
-			user           : null,
-			myPrivate      : false,
-			orderBy        : 'updatedAt',
-			orderAsc       : 'desc',
-			limit          : 21,
-			start          : 0
-    	};
 
 		window.fbAsyncInit = function() {
 		    Parse.FacebookUtils.init({ // this line replaces FB.init({
@@ -49,7 +36,7 @@ var s, app = {
 		Parse.history.start();
 
 		//Models
-		app.Receipt         = Parse.Object.extend("Receipt");
+		app.Recipe         = Parse.Object.extend("Recipe");
 		app.Ingredient      = Parse.Object.extend("Ingredient");
 		app.IngredientGroup = Parse.Object.extend("IngredientGroup");
 		app.LabelGroup      = Parse.Object.extend("LabelGroup");
@@ -57,15 +44,62 @@ var s, app = {
 		app.FacebookUser    = Parse.Object.extend("FacebookUser");
 
 		//Views
-		app.EditReceiptView = Backbone.View.extend({
-			el       : '#editReceiptPlaceholder',
-			template : _.template($('#editReceipt-tmpl').html()),
+		app.RecipeView = Backbone.View.extend({
+			el       : '#viewRecipePlaceholder',
+			template : _.template($('#viewRecipe-tmpl').html()),
+			events : {
+				'click .btnEdit'    : 'onEdit',
+				'click .close'      : 'onDiscard',
+			},
+
+			initialize: function() {
+				this.listenTo(this.model, 'sync change', this.render);
+			    this.render();
+			},
+			remove: function() {
+				this.$el.empty().off(); /* off to unbind the events */
+				this.stopListening();
+				return this;
+			},
+			render: function() {
+				var html = $(this.template(this.model.toJSON()));
+
+
+				var recipeLabels = this.model.get('labels');
+				var labels = new Array();
+				for (var j = 0; j < recipeLabels.length; j++) {
+					var l = app.labelCollection.get(recipeLabels[j].id);
+					// labels.push(l);
+					html.find('.labels').append('<span class="label label-success">' + l.get('name') + '</span>');
+				};
+
+				$('.mdl-layout__header-row .recipeName').text(': '+this.model.get('name'));
+
+				this.$el.html(html);
+				return this;
+			},
+			onEdit: function() {
+				app.editRecipe(this.model);
+			},
+			onDiscard:function() {
+				$('.mdl-layout__header-row .recipeName').text('');
+				this.remove();
+				app.switchLayout('list');
+				delete this;
+			}
+			
+		});
+
+		app.EditRecipeView = Backbone.View.extend({
+			el       : '#editRecipePlaceholder',
+			template : _.template($('#editRecipe-tmpl').html()),
 			events   : {
-				'change .name'                 : 'onChangeName',
-				'change .description'          : 'onChangeDescription',
-				'change .ingredients'          : 'onChangeIngredients',
-				'click #btnEditReceiptSave'    : 'onSave',
-				'click #btnEditReceiptDiscard' : 'onDiscard'
+				'change .name'                : 'onChangeName',
+				'change .description'         : 'onChangeDescription',
+				'change .ingredients'         : 'onChangeIngredients',
+				'change .directions'          : 'onChangeDirections',
+				'click #btnEditRecipeSave'    : 'onSave',
+				'click #btnEditRecipeDiscard' : 'onDiscard'
 			},
 
 			initialize: function() {
@@ -79,6 +113,7 @@ var s, app = {
 				return this;
 			},
 			render: function() {
+				$('.mdl-layout__header-row .recipeName').text(': '+this.model.get('name'));
 				var html = this.template(this.model.toJSON());
 				this.$el.html(html);
 				return this;
@@ -134,6 +169,9 @@ var s, app = {
 			onChangeIngredients: function(evt) {
 				this.model.set('ingredients', evt.currentTarget.value);
 			},
+			onChangeDirections: function(evt) {
+				this.model.set('directions', evt.currentTarget.value);
+			},
 			onSave: function(evt) {
 				app.spinnerStart();
 				var currentUser = Parse.User.current();
@@ -148,7 +186,7 @@ var s, app = {
 				this.model.set('user', currentUser);
 				this.model.set('avatar', currentUser.get('avatar'));
 				this.model.set('author', currentUser.get('name'));
-				var searchMask = this.model.get('name')+' '+this.model.get('description')+' '+this.model.get('ingredients');
+				var searchMask = this.model.get('name')+' '+this.model.get('description')+' '+this.model.get('ingredients')+' '+this.model.get('directions');
 				this.model.set('searchMask', app.genSearchMask(searchMask));
 				this.model.set('searchMaskStr', this.model.get('searchMask').join(" ") );
 
@@ -167,7 +205,7 @@ var s, app = {
 					model.save();
 					app.loadLabels();
 					app.spinnerStop();
-					app.viewReceipt(model);
+					app.viewRecipe(model);
 				})
 
 				// this.unbind();
@@ -176,22 +214,21 @@ var s, app = {
 				this.remove();
 			},
 			onDiscard:function() {
-				// TODO
-				// this.unbind();
-				// this.undelegateEvents();
-				// this.$el.empty(); 
+				$('.mdl-layout__header-row .recipeName').text('');
+				app.viewRecipe(this.model);
 				this.remove();
-				app.switchLayout('list');
 				delete this;
 			}
 		})
 
-		app.ReceiptListItemView = Backbone.View.extend({
+		app.RecipeListItemView = Backbone.View.extend({
 			tagName   : 'div',
-			className : 'receipt-card col-sm-12 col-md-6 col-lg-4',
-			template  : _.template($('#receiptListView-tmpl').html()),
+			className : 'recipe-card col-sm-12 col-md-6 col-lg-4',
+			template  : _.template($('#recipeListView-tmpl').html()),
 			events : {
 				'click .btnRead'    : 'onRead',
+				'click .name'    : 'onRead',
+				'click .image'    : 'onRead',
 			},
 			initialize: function() {
 				this.listenTo(this.model, "change", this.render);
@@ -202,12 +239,12 @@ var s, app = {
 				return this;
 			},
 			onRead: function(e) {
-				app.editReceipt(this.model);
+				app.viewRecipe(this.model);
 			}
 		});
 
-		app.ReceiptListView = Backbone.View.extend({
-			el: '#receiptResultsList',
+		app.RecipeListView = Backbone.View.extend({
+			el: '#recipeResultsList',
 			initialize: function() {
 				this.listenTo(this.collection, 'sync', this.render);
 			},
@@ -215,7 +252,7 @@ var s, app = {
 				var $list = this.$el.empty();
 				var counter = 0;
 				this.collection.each(function(model) {
-					var item = new app.ReceiptListItemView({model: model});
+					var item = new app.RecipeListItemView({model: model});
 					$list.append(item.render().$el);
 					counter++;
 					if(counter % 2 == 0) {
@@ -247,14 +284,9 @@ var s, app = {
 			},
 			select: function(e) {
 				console.log(this.model);
-				var index = _.indexOf(app.receiptsFilter.labels, this.model);
-				if (index == -1) {
-					app.receiptsFilter.labels.push(this.model);
-				}
-				else {
-					app.receiptsFilter.labels.splice(index, 1);
-				}
-				app.listReceipts();
+				app.recipesFiltermanager.toggleLabel(this.model);
+				app.recipesFiltermanager.search();
+				// app.listRecipes();
 				$(this.$el).find('i').toggleClass('mdl-color-text--light-green-400');
 				$(this.$el).find('i').toggleClass('mdl-color-text--light-green-900');
 			}
@@ -315,7 +347,12 @@ var s, app = {
 			}
 		})
 
+		app.RecipesFiltermanagerView = Backbone.View.extend({
 
+		});
+
+		app.recipesFiltermanager = new app.RecipesFiltermanager();
+		app.recipesFiltermanagerView = new app.RecipesFiltermanagerView({model: app.recipesFiltermanager});
 		//start
 		app.startUser();
     },
@@ -325,15 +362,15 @@ var s, app = {
 			app.facebookLogin();
 		})
 
-		//Create receipt button
-		$('#btnCreateReceipt').on('click', function(e) {
-			app.createNewReceipt();
+		//Create recipe button
+		$('#btnCreateRecipe').on('click', function(e) {
+			app.createNewRecipe();
 		})
 
 		$('#search').keyup(function (e) {
 		    if (e.keyCode == 13) {
-				app.receiptsFilter.texts = $(e.target).val();
-				app.listReceipts();
+				app.recipesFiltermanager.set('text',$(e.target).val());
+				app.recipesFiltermanager.search();
 		    }
 		});
     },
@@ -352,21 +389,10 @@ var s, app = {
     		//labels
     		this.loadLabels();
     		//
-app.listReceipts();
     		$(".btnSignIn").addClass('hidden');
     		$(".btnLogout").show();
 			$('.app-avatar').attr('src',currentUser.get('avatar'));
 			$('.app-user-name').html(currentUser.get('name'));
-    		
-   			// var query = new Parse.Query(app.FacebookUser);
-			// query.equalTo("user", Parse.User.current());
-			// query.find({
-			// 	success: function(results) {
-			// 		var fuser = results[0];
-			// 		$('.app-avatar').attr('src',fuser.get("picture"));
-			// 		$('.app-user-name').html(fuser.get("name"));
-			// 	}
-			// })
     	}
     	else {
     		$(".btnSignIn").removeClass('hidden');
@@ -388,7 +414,8 @@ app.listReceipts();
 		    			success: function(labels) {
 		    				app.labelCollection = new Parse.Collection(labels, {model: app.Label});
 		    				var navigationLabelGroupView = new app.NavigationLabelGroupView({collection: app.labelGroupCollection});
-		    				// var labelGroupView = new app.NavigationLabelGroupView({collection: app.labelGroupCollection});
+		    				app.recipesFiltermanager.set('labels',[]);
+		    				app.recipesFiltermanager.search();
 		    			}
 		    		});
 		    	}
@@ -485,187 +512,192 @@ app.listReceipts();
 		});
     },
     switchLayout: function(layout) {
-    	var zones = ['receiptResultsList', 'receiptView', 'editReceipt' ]
+    	var zones = ['recipeResultsList', 'viewRecipe', 'editRecipe' ]
     	zones.forEach(function(element, index, array){ 
     		$('#'+element).hide();
     	})
 
-    	var buttons = ['btnCreateReceipt', 'btnEditReceipt'];
+    	var buttons = ['btnCreateRecipe', 'btnEditRecipe'];
     	buttons.forEach(function(element, index, array){ 
     		$('#'+element).hide();
     	})
     	
     	switch(layout) {
 	    	case 'list':
-		    	$('#receiptResultsList').show();
-		    	$('#btnCreateReceipt').show();
+		    	$('#recipeResultsList').show();
+		    	$('#btnCreateRecipe').show();
 		    	break;
 		    case 'view':
-			    $('#receiptView').show();
-			    $('#btnEditReceipt').show();
+			    $('#viewRecipe').show();
+			    $('#btnCreateRecipe').show();
+			    // $('#btnEditRecipe').show();
 		    	break;	
 	    	case 'edit':
-		    	$('#editReceipt').show();
+		    	$('#editRecipe').show();
 	    		break;
     	}
 
     },
-    listReceipts: function() {
-    	var qReceipt = new Parse.Query(app.Receipt);
-		var currentUser = Parse.User.current();
-		//keywords
-		if (app.receiptsFilter.texts!='') {
-			var keywords = app.receiptsFilter.texts.split(' ');
-	    	if (Array.isArray(keywords) && keywords.length) {
-	   //  		keywords = _.uniq(app.genSearchMask(keywords.join(' ')));
-				// qReceipt.containsAll('searchMask', keywords);
-	    	
-	    		var re = ""
-	    		for (var i = 0; i < keywords.length; i++) {
-	    			keywords[i] = app.genSearchMask(keywords[i]);
-	    			if (i == 0) 
-	    				re += "(.*"+keywords[i]+".*)"
-	    			else 
-	    				re += "|(.*"+keywords[i]+".*)"
-	    		};
-				qReceipt.matches("searchMaskStr", re);
-
-	    	}
-		}
-
-
-    	//labels
-    	var labels = app.receiptsFilter.labels;
-		if (Array.isArray(labels) && labels.length) {
-			var ids = [];
-			for (var i = 0; i < labels.length; i++) {
-				ids.push(labels[i].id);
-			};
-			// qReceipt.containsAll("labelsId", ids);
-			qReceipt.containedIn("labelsId", ids);
-			// qReceipt.matchesKeyInQuery("label", labels);
-		}
-
-		if(app.receiptsFilter.allPublicAcces == false) {
-			// qReceipt.include('user');
-			// qReceipt.equalTo('user', currentUser);
-		}
-		else {
-			//TODO set public filter
-		}
-
-		if(app.receiptsFilter.user != null) {
-			// qReceipt.include('user');
-			qReceipt.equalTo('user', currentUser);	
-		}
-		
-		if(app.receiptsFilter.myPrivate) {
-			// qReceipt.include('user');
-			qReceipt.equalTo('user', currentUser);
-			//TODO private filter	
-		}
-
-    	var limit = (app.receiptsFilter.limit)?app.receiptsFilter.limit:21;
-		qReceipt.limit(limit);
-
-		if (app.receiptsFilter.orderBy) {
-			qReceipt.descending(app.receiptsFilter.orderBy); 
-		}
-
-		app.spinnerStart();
-		qReceipt.find().then(function (list) {
-		    // use list
-		    app.renderReceiptList(new Parse.Collection(list,{model:app.Receipt}));
-		    app.spinnerStop();
-		}, function (error) {
-		    console.log(error);
-		});
-    },
-    createNewReceipt: function() {
+    createNewRecipe: function() {
     	var currentUser = Parse.User.current();
-    	newReceipt = new app.Receipt({
-			name        :'new receipt name',
+    	newRecipe = new app.Recipe({
+			name        :'new recipe name',
 			description : 'description',
 			ingredients : 'ingredients',
+			directions  : 'directions',
 			user        : currentUser,
 			avatar      : currentUser.get('avatar'),
 			author      : currentUser.get('name'),
 			labels      : new Array()
     	});
 
-    	app.editReceipt(newReceipt);
+    	app.editRecipe(newRecipe);
     },
-    editReceipt: function(receipt) {
-    	editReceiptView = new app.EditReceiptView({model: receipt});
+    editRecipe: function(recipe) {
+    	editRecipeView = new app.EditRecipeView({model: recipe});
     	app.switchLayout('edit');
     },
-    viewReceipt: function(receipt) {
-    	return;
-
-    	receiptView = new app.ReceiptView({model: receipt});
-    	app.switchLayout('viewReceipt');
+    viewRecipe: function(recipe) {
+    	recipeView = new app.RecipeView({model: recipe});
+    	app.switchLayout('view');
     },
     genSearchMask: function(text) {
     	text = text.toLowerCase();
     	var re = /[^A-Za-z\ ]/g;
 		return _.uniq(text.replace(re, '').replace(/(.)\1{1,}/g, '$1').split(' '));
 	},
-	renderReceiptList: function(receiptList) {
-		var receiptListView = new app.ReceiptListView({collection: receiptList});
-		receiptListView.render();
+	renderRecipeList: function(recipeList) {
+		var recipeListView = new app.RecipeListView({collection: recipeList});
+		recipeListView.render();
 	}
 }
 
-app.receiptsFiltermanager = {
-	filters: {
+app.RecipesFiltermanager = Backbone.Model.extend({
+	defaults: {
 		labels         : [],
-		text          : '',
-		lang          : [],
+		text           : '',
+		lang           : [],
 		favorites      : false,
-		allPublicAcces : false,
+		allPublicAcces : true,
 		user           : null,
 		myPrivate      : false,
 		orderBy        : 'updatedAt',
 		orderAsc       : 'desc',
 		limit          : 21,
 		start          : 0
-	},
+    },
+    validate: function(attrs, options) {
+	    if ( _.has(attrs,"allPublicAcces") ) {
+	    	if(attrs.allPublicAcces) {
+				this.set('myPrivate', false);
+				this.set('labels', []);
+			}
+			else {
+				if( this.get('user') == null ) {
+					this.set('myPrivate', true);
+				}
+			}
+	    }
 
-	doSearch: function() {
-		app.listReceipts(this.filters);
-	},
-
+	    if (_.has(attrs,"myPrivate")) {
+		    if (attr.myPrivate) {
+				this.set('allPublicAcces', false);
+				this.set('user', Parse.User.current());
+			}
+		}
+  	},
 	addLabel: function(label) {
-		var index = _.indexOf(this.filters.labels, label);
+		var labels = this.get('labels');
+		var index = _.indexOf(labels, label);
 		if (index == -1) {
-			this.filters.labels.push(label);
+			labels.push(label);
+			this.set('labels', labels);
 		}
+		this.setAllPublicAcces(false);
 	},
-
 	removeLabel: function(label) {
-		var index = _.indexOf(this.filters.labels, label);
+		var labels = this.get('labels');
+		var index = _.indexOf(labels, label);
 		if (index != -1) {
-			this.filters.labels.splice(index, 1);
+			labels.splice(index, 1);
 		}
+		this.set('labels', labels);
 	},
-
 	toggleLabel: function(label) {
-		var index = _.indexOf(this.filters.labels, label);
+		var labels = this.get('labels');
+		var index = _.indexOf(labels, label);
 		if (index == -1) {
-			this.filters.labels.push(label);
+			labels.push(label);
+			this.set('allPublicAcces', false);
 		}
 		else {
-			this.filters.labels.splice(index, 1);
+			labels.splice(index, 1);
 		}
+		this.set('labels', labels);
 	},
-
-	setSearchText: function(text) {
-		this.filters.text = text;
+	toggleFavoritest: function() {
+		this.set('favorites', !this.get('favorites'));
 	},
-
-	setSearchLang: function(lang) {
-		this.filters.lang = lang;
+	toggleAllPublicAcces: function() {
+		this.set('allPublicAcces', !this.get('allPublicAcces'));
 	},
+	search: function() {
+    	var qRecipe = new Parse.Query(app.Recipe);
+		var currentUser = Parse.User.current();
 
+		//keywords
+		if ( this.get('text') != '' ) {
+			var keywords = this.get('text').split(' ');
+	    	if ( Array.isArray(keywords) && keywords.length ) {
+	   			// keywords = _.uniq(app.genSearchMask(keywords.join(' ')));
+				// qRecipe.containsAll('searchMask', keywords);
+	    	
+	    		var re = ""
+	    		for (var i = 0; i < keywords.length; i++) {
+	    			keywords[i] = app.genSearchMask(keywords[i]);
+    				re += "(?=.*"+keywords[i]+".*)"; // AND Condition
+	    			// OR Condition
+	    			// if (i == 0) 
+	    			// 	re += "(.*"+keywords[i]+".*)"
+	    			// else 
+	    			// 	re += "|(.*"+keywords[i]+".*)"
+	    		};
+				qRecipe.matches("searchMaskStr", re);
+	    	}
+		}
 
-}
+    	//labels
+    	var labels = this.get('labels');
+		if ( Array.isArray(labels) && labels.length ) {
+			var ids = [];
+			for (var i = 0; i < labels.length; i++) {
+				ids.push(labels[i].id);
+			};
+			qRecipe.containsAll("labelsId", ids);  // AND
+			// qRecipe.containedIn("labelsId", ids); //OR
+		}
+
+		if( this.get('user') != null ) {
+			qRecipe.equalTo('user', this.get('user'));	
+		}
+		
+    	var limit = (this.get('limit'))?this.get('limit'):21;
+		qRecipe.limit(limit);
+
+		if ( this.get('orderBy') ) {
+			qRecipe.descending(this.get('orderBy')); 
+		}
+
+		app.spinnerStart();
+		qRecipe.find().then(function (list) {
+		    // use list
+		    app.renderRecipeList(new Parse.Collection(list,{model:app.Recipe}));
+		    app.spinnerStop();
+		    if(list.length) {
+			    app.switchLayout('list');
+		    }
+		}, function (error) {
+		    console.log(error);
+		});
+    },
+});

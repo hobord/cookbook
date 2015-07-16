@@ -59,7 +59,9 @@ html, body {
           align-items: center;
   width: 100%;
 }
-
+.mdl-layout__header-row .recipeName {
+	margin-left: 6px;
+}
 .app-navigation {
   -webkit-box-flex: 1;
   -webkit-flex-grow: 1;
@@ -154,40 +156,92 @@ html, body {
 }
 .app-content {
   max-width: 1080px;
+  padding-bottom: 100px;
 }
 
 
 
 /*----------------------------------------------------------------------------*/
 
-#btnCreateReceipt, #btnEditReceipt {
+#btnCreateRecipe, #btnEditRecipe {
 	position: fixed;
 	bottom: 50px;
 	right: 20px;
 }
 
-.receipt-card {
+.recipe-card {
 	padding: 5px;
 }
-.receipt-card-content {
+.recipe-card-content {
 	padding: 5px;
 }
-.btn-add-to-favorites i{
+.recipe-card-content .btn-add-to-favorites i{
 	color: #FF6D00;
 }
-.receipt-short-desc {
+.recipeListItem .recipe-short-desc {
 	padding-top:0px;
 	height: 75px;
 	overflow: hidden;
 }
-/*.receipt-card > .mdl-card__title {
-	color: #fff;
-	height: 250px;
-	background: url('/images/krumplis1.jpg') center / cover;
+.recipe-card-content .app-avatar-small {
+	cursor:pointer;	
 }
 
-.receipt-card > .mdl-card__menu {
-	color: #fff;
+.recipe-card-content .name {
+	cursor:pointer;	
 }
-*/
 
+.recipe-card-content .image {
+	cursor:pointer;	
+}
+/*----------------------------------------------------------------------------*/
+
+
+/*----------------------------------------------------------------------------*/
+#editRecipePlaceholder {
+	margin: auto;
+}
+#editRecipe .thumbnail {
+	padding: 15px;
+}
+#editRecipe label {
+	margin-top: 15px;
+}
+#editRecipe label.name {
+	width: 75px;
+}
+#editRecipe input.name{
+	display: inline-block;
+	width: 80%;
+}
+#editRecipe textarea {
+	padding: 10px;
+}
+#editRecipe .footer {
+	margin-top: 10px;
+}
+
+/*----------------------------------------------------------------------------*/
+
+#viewRecipePlaceholder{
+	margin: auto;
+}
+#viewRecipe .thumbnail {
+	padding: 15px;
+}
+#viewRecipe .labels {
+	margin:10px; 
+}
+#viewRecipe .label {
+	margin-top: 15px;
+	margin-right: 15px;
+	font-size: 14px;
+}
+#viewRecipe .footer {
+	margin-top: 10px;
+}
+#viewRecipe .mdl-card__menu .close {
+	display: block;
+	padding-top: 4px;
+	padding-right: 20px;
+}
