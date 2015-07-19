@@ -5,7 +5,8 @@ var s, app = {
     	applicationId: "uJLDpdzRo0AS07SHiXDRUR6dX2egvU9rKcbHkIMP",
     	applicationKey: "LkeF59Hh5HXrketX8qw6SFWwFALnVu8vqJKwkp5n",
     	// facebookAppId: "890469204379378", // Production
-    	facebookAppId: "900908010002164", //Test
+    	// facebookAppId: "900908010002164", //Test
+    	facebookAppId: "905249916234640", //Test
     },
     templates: {
     	'application'          : '#application-tmpl',
@@ -22,7 +23,7 @@ var s, app = {
     	this.loadTemplates();
     	
     	this.detectedLang = (navigator.languages? navigator.languages[0] : (navigator.language || navigator.userLanguage)).substr(0,2);
-    	if (app.TDict.hu[this.language]) {
+    	if (app.TDict[this.detectedLang]) {
 			app.TDict = underi18n.MessageFactory(app.TDict[this.detectedLang]);
     	} else {
 			app.TDict = underi18n.MessageFactory('en');
@@ -30,6 +31,7 @@ var s, app = {
 
 		this.applicationView  = new this.ApplicationView();
 
+		app.User = null;
     	this.facebookUser = null;
 		window.fbAsyncInit = function() {
 		    Parse.FacebookUtils.init({ // this line replaces FB.init({
@@ -74,8 +76,20 @@ var s, app = {
     },
     bindUiActions: function() {
 		//Facebook login
-		$('.btnSignIn').on('click', function(e){
-			app.facebookLogin();
+		$('.btnSignIn').click(function(e){
+            Parse.FacebookUtils.logIn("public_profile,email,user_birthday,user_hometown,user_location,publish_actions", {
+              success: function(user) {
+                if (!user.existed()) {
+                  alert("User signed up and logged in through Facebook!");
+                } else {
+                    alert("User logged in through Facebook!");
+                }
+                app.setFacebookUser();
+              },
+                error: function(user, error) {
+                  alert("User cancelled the Facebook login or did not fully authorize.");
+                }
+            });
 		})
 
 		//Create recipe button
@@ -146,18 +160,17 @@ var s, app = {
     },
 
     startUser: function() {
-    	var currentUser = Parse.User.current();
-    	if(currentUser) {
+    	app.User = Parse.User.current();
+    	if(app.User) {
 
     		//load user data
-
     		//labels
-    		this.loadLabels();
+    		this.loadLabels(app.User);
     		//
     		$(".btnSignIn").addClass('hidden');
     		$(".btnLogout").show();
-			$('.app-avatar').attr('src',currentUser.get('avatar'));
-			$('.app-user-name').html(currentUser.get('name'));
+			$('.app-avatar').attr('src',app.User.get('avatar'));
+			$('.app-user-name').html(app.User.get('name'));
     	}
     	else {
     		$(".btnSignIn").removeClass('hidden');
@@ -165,17 +178,19 @@ var s, app = {
     	}
     },
     loadLabels: function(filterUser) {
-    	// var currentUser = Parse.User.current();
-		// labelGroupQuery.equalTo("user", currentUser);
-    	// var filterUser = app.recipesFiltermanager.get('user');
-    	// var currentUser = (filterUser)?filterUser:null;
     	var labelGroupQuery = new Parse.Query(app.LabelGroup);
 		labelGroupQuery.equalTo("user", filterUser);
 		labelGroupQuery.find({
 			success: function(labelgroups) {
+				var currentUser = Parse.User.current();
 				app.labelGroupCollection = new Parse.Collection(labelgroups, {model: app.LabelGroup});
+				
+				if (app.User && labelgroups.length && currentUser && ( labelgroups[0].get('user').id == currentUser.id  )) {
+					app.User.labelGroups = new Parse.Collection(labelgroups, {model: app.LabelGroup});
+				}
+
 				$(app.NavigationLabelGroupView.prototype.el).empty(); //#LabelGroupsViewPlaceholder'
-				for (var j = app.labelGroupCollection.models.length - 1; j >= 0; j--) {
+				// for (var j = app.labelGroupCollection.models.length - 1; j >= 0; j--) {
     				var labelQuery = new Parse.Query(app.Label);
 		    		labelQuery.equalTo("user", filterUser);
 		    		labelQuery.find({
@@ -183,10 +198,14 @@ var s, app = {
 		    				app.labelCollection = new Parse.Collection(labels, {model: app.Label});
 		    				var navigationLabelGroupView = new app.NavigationLabelGroupView({collection: app.labelGroupCollection});
 		    				app.recipesFiltermanager.set('labels',[]);
+
+		    				if (labels.length && currentUser && ( labels[0].get('user').id == currentUser.id  )) {
+								app.User.labelCollection = new Parse.Collection(labels, {model: app.Label});
+							}
 		    				// app.recipesFiltermanager.search();
 		    			}
 		    		});
-		    	}
+		    	// }
 			}
 		});
     },
@@ -256,6 +275,7 @@ var s, app = {
 							});
 							$('.app-avatar').attr('src',app.facebookUser.picture.data.url);
 							$('.app-user-name').html(app.facebookUser.name);
+							app.startUser();
 				    	}
 					}
 				});
@@ -265,22 +285,6 @@ var s, app = {
 		  	}
 		});
     },
-    facebookLogin: function() {
-    	Parse.FacebookUtils.logIn("public_profile,email,user_birthday,user_hometown,user_location,publish_actions", {
-			success: function(user) {
-				if (!user.existed()) {
-					alert("User signed up and logged in through Facebook!");
-				} else {
-				  	alert("User logged in through Facebook!");
-				}
-				app.setFacebookUser();
-			},
-		  	error: function(user, error) {
-		    	alert("User cancelled the Facebook login or did not fully authorize.");
-		  	}
-		});
-    },
-
     switchLayout: function(layout) {
     	var zones = ['recipeResultsList', 'viewRecipe', 'editRecipe' ]
     	zones.forEach(function(element, index, array){ 
@@ -328,6 +332,20 @@ var s, app = {
     	});
 
     	app.editRecipe(newRecipe);
+    },
+    cloneRecipe: function(orig) {
+    	var currentUser = Parse.User.current();
+    	newRecipe = new app.Recipe({
+			name        : orig.get('name'),
+			description : orig.get('description'),
+			ingredients : orig.get('ingredients'),
+			directions  : orig.get('directions'),
+			user        : currentUser,
+			avatar      : currentUser.get('avatar'),
+			author      : currentUser.get('name'),
+			labels      : new Array()
+    	});
+    	return newRecipe;
     },
     editRecipe: function(recipe) { 
     	this.editRecipeView = new app.EditRecipeView({model: recipe});
@@ -410,6 +428,9 @@ var s, app = {
 		toggleFavoritest: function() {
 			this.set('favorites', !this.get('favorites'));
 		},
+		setAppTitle: function() {
+
+		},
 		search: function() {
 	    	var qRecipe = new Parse.Query(app.Recipe);
 			var currentUser = Parse.User.current();
@@ -462,7 +483,7 @@ var s, app = {
 	    	$('.app-navigation').find('.cmdListMyRecipes i').addClass('mdl-color-text--light-green-900');
 			if( this.get('user') != null ) {
 				qRecipe.equalTo('user', this.get('user'));
-				if (currentUser.id == this.get('user').id) {
+				if (currentUser && currentUser.id == this.get('user').id) {
 					$('.app-navigation').find('.cmdListMyRecipes i').addClass('mdl-color-text--light-green-400');
 			    	$('.app-navigation').find('.cmdListMyRecipes i').removeClass('mdl-color-text--light-green-900');
 				}
@@ -608,6 +629,7 @@ var s, app = {
 		el       : '#viewRecipePlaceholder',
 		events : {
 			'click .btnEdit'    : 'onEdit',
+			'click .btnClone'   : 'onClone',
 			'click .author'     : 'onAuthor',
 			'click .close'      : 'onDiscard',
 		},
@@ -645,6 +667,9 @@ var s, app = {
 		},
 		onEdit: function() {
 			app.editRecipe(this.model);
+		},
+		onClone: function() {
+			app.editRecipe(app.cloneRecipe(this.model));
 		},
 		onDiscard:function() {
 			$('.mdl-layout-title').html('');
@@ -691,15 +716,21 @@ var s, app = {
 		},
 		renderLabelsGroups: function() {
 			var currentUser = Parse.User.current();
-			var groups = app.labelGroupCollection.models;
+			// var groups = app.labelGroupCollection.models;
+			var groups = app.User.labelGroups.models;
 			this.labelSelectors = new Array();
 			this.$el.find('.labelGroups').empty();
 			
 			for (var i = 0; i<groups.length; i++) {					
 				var glabels = new Array();
-				for (var j = 0; j<app.labelCollection.models.length; j++) {
-					if (app.labelCollection.models[j].get('labelgroup').id == groups[i].id) {
-						glabels.push(app.labelCollection.models[j]);
+				// for (var j = 0; j<app.labelCollection.models.length; j++) {
+				// 	if (app.labelCollection.models[j].get('labelgroup').id == groups[i].id) {
+				// 		glabels.push(app.labelCollection.models[j]);
+				// 	}
+				// };
+				for (var j = 0; j<app.User.labelCollection.models.length; j++) {
+					if (app.User.labelCollection.models[j].get('labelgroup').id == groups[i].id) {
+						glabels.push(app.User.labelCollection.models[j]);
 					}
 				};
 
@@ -714,7 +745,7 @@ var s, app = {
 				var selectedLabels = this.model.get('labels');
 				var sLabels = new Array();
 				for (var j = 0; j < selectedLabels.length; j++) {
-					var l = app.labelCollection.get(selectedLabels[j].id);
+					var l = app.User.labelCollection.get(selectedLabels[j].id);
 					if (l.get('labelgroup').id == groups[i].id) {
 						sLabels.push(l);
 					}
@@ -774,8 +805,21 @@ var s, app = {
 					};
 				}
 				model.set('labelsId', ids);
+
+				var currentACL = model.getACL();
+				if (typeof currentACL === 'undefined') {
+					currentACL = new Parse.ACL();
+				}
+				currentACL.setPublicWriteAccess(false);
+				currentACL.setWriteAccess(app.User.id, true);
+				if(model.get('private')) {
+					currentACL.setPublicReadAccess(false);
+					currentACL.setReadAccess(app.User.id, true);
+				}
+				model.setACL(currentACL)
+
 				model.save();
-				app.loadLabels();
+				app.loadLabels(app.User);
 				app.spinnerStop();
 				app.viewRecipe(model);
 			})

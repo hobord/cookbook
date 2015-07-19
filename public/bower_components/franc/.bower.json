@@ -1,0 +1,56 @@
+{
+  "name": "franc",
+  "main": "dist/franc.js",
+  "description": "Detect the language of text",
+  "license": "MIT",
+  "keywords": [
+    "natural",
+    "language",
+    "writing",
+    "system",
+    "language",
+    "detect",
+    "guess",
+    "cli",
+    "bin"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wooorm/franc.git"
+  },
+  "authors": [
+    "Titus Wormer <tituswormer@gmail.com>"
+  ],
+  "ignore": [
+    ".*",
+    "*.log",
+    "*.md",
+    "*.svg",
+    "build/",
+    "components/",
+    "coverage/",
+    "data/",
+    "lib/",
+    "node_modules/",
+    "script/",
+    "test/",
+    "benchmark.js",
+    "build.js",
+    "cli.js",
+    "index.js",
+    "component.json",
+    "package.json"
+  ],
+  "homepage": "https://github.com/wooorm/franc",
+  "version": "1.1.1",
+  "_release": "1.1.1",
+  "_resolution": {
+    "type": "version",
+    "tag": "1.1.1",
+    "commit": "78c432b333fc1e27ed39139afc6b7fa66aa760c2"
+  },
+  "_source": "git://github.com/wooorm/franc.git",
+  "_target": "~1.1.1",
+  "_originalSource": "franc",
+  "_direct": true
+}
