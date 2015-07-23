@@ -7,6 +7,8 @@ var s, app = {
     	// facebookAppId: "890469204379378", // Production
     	// facebookAppId: "900908010002164", //Test
     	facebookAppId: "905249916234640", //Test
+    	AWSAccessKeyId: "AKIAJ5EPMLPXAQVXTNPQ",
+    	amazonBucket: "cookbookimg"
     },
     templates: {
     	'application'          : '#application-tmpl',
@@ -16,6 +18,12 @@ var s, app = {
 		'navigationLabel'      : '#navigationLabel-tmpl',
 		'navigationLabelGroup' : '#navigationLabelGroup-tmpl',
     },
+    labelCollection: null,
+    loginedUser: null, //User.labelCollection = null
+    viewUser: null,
+	recipeView: null,
+	editRecipeView: null,
+	recipeListView: null,
     init: function() {
         s = this.settings, this.initalizers(), this.bindUiActions();
     },
@@ -31,7 +39,7 @@ var s, app = {
 
 		this.applicationView  = new this.ApplicationView();
 
-		app.User = null;
+		app.loginedUser = null;
     	this.facebookUser = null;
 		window.fbAsyncInit = function() {
 		    Parse.FacebookUtils.init({ // this line replaces FB.init({
@@ -78,17 +86,17 @@ var s, app = {
 		//Facebook login
 		$('.btnSignIn').click(function(e){
             Parse.FacebookUtils.logIn("public_profile,email,user_birthday,user_hometown,user_location,publish_actions", {
-              success: function(user) {
-                if (!user.existed()) {
-                  alert("User signed up and logged in through Facebook!");
-                } else {
-                    alert("User logged in through Facebook!");
-                }
-                app.setFacebookUser();
-              },
-                error: function(user, error) {
-                  alert("User cancelled the Facebook login or did not fully authorize.");
-                }
+				success: function(user) {
+				    if (!user.existed()) {
+				      // alert("User signed up and logged in through Facebook!");
+				    } else {
+				        // alert("User logged in through Facebook!");
+				    }
+				    app.setFacebookUser();
+				},
+				error: function(user, error) {
+					// alert("User cancelled the Facebook login or did not fully authorize.");
+				}
             });
 		})
 
@@ -106,10 +114,9 @@ var s, app = {
 		});
 
 		$('.cmdListMyRecipes').on('click', function(e) {
-			var currentUser = Parse.User.current();
-			if (currentUser) {
-				app.recipesFiltermanager.set( { user: Parse.User.current() }, { validate:true } );
-				app.router.navigate("/u/"+currentUser.get('name')+"-"+currentUser.id, {trigger: false});
+			if (app.loginedUser) {
+				app.recipesFiltermanager.set( { user: app.loginedUser }, { validate:true } );
+				app.router.navigate("/u/"+app.loginedUser.get('name')+"-"+app.loginedUser.id, {trigger: false});
 				app.switchLayout('user');
 				app.recipesFiltermanager.search();
 			}
@@ -140,42 +147,47 @@ var s, app = {
     	$('.appSpinner').removeClass('is-active');
     },
 
-    controller: function() {
-    	// logIn
-    	// logOut
-
-    	// createRecipe
-    	// listRecipes
-    	// viewRecipe
-    	// editRecipe
-
-    	// editLabels
-    	// addLabel
-    	// editLabel
-    	// deleteLabel
-
-    	// editLabelGroups
-    	// editLabelGroup
-    	// createLabelGroup
-    },
-
     startUser: function() {
-    	app.User = Parse.User.current();
-    	if(app.User) {
+    	app.loginedUser = Parse.User.current();
+    	if(app.loginedUser) {
 
     		//load user data
+    		this.loadUserData(app.loginedUser);
     		//labels
-    		this.loadLabels(app.User);
     		//
     		$(".btnSignIn").addClass('hidden');
+    		// $('.cmdListFavoritedRecipes').removeClass('hidden');
+    		// $('.cmdListMyRecipes').removeClass('hidden');
     		$(".btnLogout").show();
-			$('.app-avatar').attr('src',app.User.get('avatar'));
-			$('.app-user-name').html(app.User.get('name'));
+    		$(".app-navigation .loginedUser").show();
+    		
     	}
     	else {
     		$(".btnSignIn").removeClass('hidden');
+    		// $('.cmdListFavoritedRecipes').addClass('hidden');
+    		// $('.cmdListMyRecipes').addClass('hidden');
     		$(".btnLogout").hide();
+    		$(".app-navigation .loginedUser").hide();
     	}
+    },
+    loadUserData: function(user) {
+		this.loadLabels(app.loginedUser);
+		var query = new Parse.Query(Parse.User);
+		query.get(user.id, {
+			success: function(user) {
+			// The object was retrieved successfully.
+				app.loginedUser = user;
+				app.loadLabels(user);
+				$('.app-avatar').attr('src',app.loginedUser.get('avatar'));
+				$('.app-user-name').html(app.loginedUser.get('name'));
+
+			},
+			error: function(object, error) {
+			// The object was not retrieved successfully.
+			// error is a Parse.Error with an error code and message.
+				console.log(error);
+			}
+		});
     },
     loadLabels: function(filterUser) {
     	var labelGroupQuery = new Parse.Query(app.LabelGroup);
@@ -185,8 +197,8 @@ var s, app = {
 				var currentUser = Parse.User.current();
 				app.labelGroupCollection = new Parse.Collection(labelgroups, {model: app.LabelGroup});
 				
-				if (app.User && labelgroups.length && currentUser && ( labelgroups[0].get('user').id == currentUser.id  )) {
-					app.User.labelGroups = new Parse.Collection(labelgroups, {model: app.LabelGroup});
+				if (app.loginedUser && labelgroups.length && currentUser && ( labelgroups[0].get('user').id == currentUser.id  )) {
+					app.loginedUser.labelGroups = new Parse.Collection(labelgroups, {model: app.LabelGroup});
 				}
 
 				$(app.NavigationLabelGroupView.prototype.el).empty(); //#LabelGroupsViewPlaceholder'
@@ -200,7 +212,7 @@ var s, app = {
 		    				app.recipesFiltermanager.set('labels',[]);
 
 		    				if (labels.length && currentUser && ( labels[0].get('user').id == currentUser.id  )) {
-								app.User.labelCollection = new Parse.Collection(labels, {model: app.Label});
+								app.loginedUser.labelCollection = new Parse.Collection(labels, {model: app.Label});
 							}
 		    				// app.recipesFiltermanager.search();
 		    			}
@@ -300,19 +312,34 @@ var s, app = {
     		case 'user':
 		    	$('#recipeResultsList').show();
 		    	$('#btnCreateRecipe').show();
+		    	if (app.recipesFiltermanager.get('user')) {
+			    	$('.mdl-layout-title').html(app.recipesFiltermanager.get('user').get('name'));
+		    	}
+		    	else {
+		    		$('.mdl-layout-title').html('');	
+		    	}
+
 		    	break;
 	    	case 'list':
 	    		app.router.navigate( "/", { trigger: false } );
 		    	$('#recipeResultsList').show();
-		    	$('#btnCreateRecipe').show();
+		    	$('#btnCreateRecipe').show()
+		    	if (app.recipesFiltermanager.get('user')) {
+			    	$('.mdl-layout-title').html(app.recipesFiltermanager.get('user').get('name'));
+		    	}
+		    	else {
+		    		$('.mdl-layout-title').html('');	
+		    	}
 		    	break;
 		    case 'view':
 			    $('#viewRecipe').show();
 			    $('#btnCreateRecipe').show();
+			    $('.mdl-layout-title').html(app.recipeView.model.get('name'));
 		    	break;	
 	    	case 'edit':
 		    	$("main").scrollTop();
 		    	$('#editRecipe').show();
+		    	$('.mdl-layout-title').html(app.recipeView.model.get('name'));
 	    		break;
     	}
 
@@ -321,14 +348,14 @@ var s, app = {
     createNewRecipe: function() {
     	var currentUser = Parse.User.current();
     	newRecipe = new app.Recipe({
-			name        :'new recipe name',
-			description : 'description',
-			ingredients : 'ingredients',
-			directions  : 'directions',
-			user        : currentUser,
-			avatar      : currentUser.get('avatar'),
-			author      : currentUser.get('name'),
-			labels      : new Array()
+			name          :'new recipe name',
+			coverImageUrl : '',
+			description   : 'description',
+			ingredients   : 'ingredients',
+			directions    : 'directions',
+			user          : currentUser,
+			labels        : new Array(),
+			private       : false
     	});
 
     	app.editRecipe(newRecipe);
@@ -336,14 +363,14 @@ var s, app = {
     cloneRecipe: function(orig) {
     	var currentUser = Parse.User.current();
     	newRecipe = new app.Recipe({
-			name        : orig.get('name'),
-			description : orig.get('description'),
-			ingredients : orig.get('ingredients'),
-			directions  : orig.get('directions'),
-			user        : currentUser,
-			avatar      : currentUser.get('avatar'),
-			author      : currentUser.get('name'),
-			labels      : new Array()
+			name          : orig.get('name'),
+			coverImageUrl : orig.get('coverImageUrl'),
+			description   : orig.get('description'),
+			ingredients   : orig.get('ingredients'),
+			directions    : orig.get('directions'),
+			user          : currentUser,
+			labels        : new Array(),
+			private       : false
     	});
     	return newRecipe;
     },
@@ -365,8 +392,8 @@ var s, app = {
 		return text.replace(/\-/g, '_');
 	},
 	renderRecipeList: function(recipeList) {
-		var recipeListView = new app.RecipeListView({collection: recipeList});
-		recipeListView.render();
+		this.recipeListView = new app.RecipeListView({collection: recipeList});
+		this.recipeListView.render();
 	}
 }
 
@@ -388,6 +415,17 @@ var s, app = {
 	    validate: function(attrs) {
 	    	if ( _.has(attrs,"user") ) {
 				app.loadLabels(attrs.user);
+
+				if(attrs.user) {
+					$('.filter-user-avatar').attr('src',attrs.user.get('avatar'));
+					$('.filter-user-name').html(attrs.user.get('name'));
+				}
+				else {
+					// $('.filter-user-avatar').attr('src','images/user.png');
+					$('.filter-user-avatar').attr('src','/icon_512.png');
+					$('.filter-user-name').html('');
+				}
+
 				if(attrs.user==null) {
 					this.set('labels', []);
 				}
@@ -520,7 +558,7 @@ var s, app = {
 			app.spinnerStart();
 			qRecipe.find().then(function (list) {
 			    // use list
-			    app.listedRecipes = new Parse.Collection(list,{model:app.Recipe});
+			    app.listedRecipes = new Parse.Collection(list, {model:app.Recipe});
 			    app.renderRecipeList(app.listedRecipes);
 			    app.spinnerStop();
 			    if(list.length) {
@@ -563,6 +601,9 @@ var s, app = {
 		recipe: function(name, rid) {
 			var rQuery = new Parse.Query(app.Recipe);
 			rQuery.equalTo('objectId',rid);
+			// include
+			rQuery.include('labels');
+			rQuery.include('user');
 			rQuery.find().then(function (list) {
 				app.viewRecipe(list[0]);
 				app.switchLayout('view');
@@ -636,7 +677,7 @@ var s, app = {
 
 		initialize: function() {
 			this.template = _.template(underi18n.template(app.templates.viewRecipe, app.TDict));
-			this.listenTo(this.model, 'sync change', this.render);
+			this.listenTo(this.model, 'change', this.render);
 		    this.render();
 		},
 		remove: function() {
@@ -645,25 +686,25 @@ var s, app = {
 			return this;
 		},
 		render: function() {
-			var html = $(this.template(this.model.toJSON()));
-
-			$('.mdl-layout-title').html(this.model.get('user').get('name'));
-			$('.recipeName').html(this.model.get('name'));
+			var html = this.template({
+				id: this.model.id, 
+				recipe: this.model.toJSON(), 
+				user: this.model.get('user').toJSON()
+			});
 
 			var recipeLabels = this.model.get('labels');
-			var labels = new Array();
-			for (var j = 0; j < recipeLabels.length; j++) {
-				html.find('.labels').append('<span class="label label-success">' + recipeLabels[j].get('name') + '</span>');
-			};
-
-			$('.mdl-layout__header-row .recipeName').text(': '+this.model.get('name'));
 
 			this.$el.html(html);
+
+			var labels = new Array();
+			for (var j = 0; j < recipeLabels.length; j++) {
+				this.$el.find('.labels').append('<span class="label label-success">' + recipeLabels[j].get('name') + '</span>');
+			};
 			return this;
 		},
 		onAuthor: function() {
 			// body...
-			app.router.navigate("/u/"+app.genUrlName(this.model.get('author'))+"-"+this.model.get('user').id, {trigger: true});
+			app.router.navigate("/u/"+app.genUrlName(this.model.get('user').get('name'))+"-"+this.model.get('user').id, {trigger: true});
 		},
 		onEdit: function() {
 			app.editRecipe(this.model);
@@ -672,8 +713,6 @@ var s, app = {
 			app.editRecipe(app.cloneRecipe(this.model));
 		},
 		onDiscard:function() {
-			$('.mdl-layout-title').html('');
-			$('.mdl-layout__header-row .recipeName').text('');
 			this.remove();
 			app.switchLayout('list');
 			if(app.listedRecipes.length == 0) {
@@ -699,7 +738,7 @@ var s, app = {
 
 		initialize: function() {
 			this.template = _.template(underi18n.template(app.templates.editRecipe, app.TDict));
-			this.listenTo(this.model, 'sync change', this.render);
+			// this.listenTo(this.model, 'change', this.render);
 		    this.render();
 		    this.renderLabelsGroups();
 		},
@@ -710,27 +749,70 @@ var s, app = {
 		},
 		render: function() {
 			$('.mdl-layout__header-row .recipeName').text(': '+this.model.get('name'));
-			var html = this.template(this.model.toJSON());
+			var html = this.template({id: this.model.id, recipe: this.model.toJSON()});
 			this.$el.html(html);
+
+			$('.upload_image').on('click', function() {
+				$('#image_upload').click();
+			});
+			// Dropzone.options.myDropzone = {
+			//   init: function() {
+			//     this.on("processing", function(file) {
+			//       this.options.url = "/some-other-url";
+			//     });
+			//   }
+			// };
+			// var myDropzone = new Dropzone(".upload_image",{
+		 //        url: 'fake',
+		 //        createImageThumbnails: false,
+		 //        paramName: "file", // The name that will be used to transfer the file
+		 //        enqueueForUpload: false
+		 //    });
+
+			// myDropzone.on("addedfile", function(file) {
+			// /* Maybe display some more file information on your page */
+			// });
+
+			$('#image_upload').change(function (e) {
+			    for (var i = 0; i < e.originalEvent.srcElement.files.length; i++) {
+			        var file = e.originalEvent.srcElement.files[i];
+
+			        var reader = new FileReader();
+			        reader.onloadend = function() {
+			            $('#editRecipe .image').attr('src', reader.result);
+			        }
+			        reader.readAsDataURL(file);
+			    }
+			});
+
+			var editor = new MediumEditor('.editable', {
+				toolbar: {
+			        buttons: ['bold', 'italic', 'underline', 'strikethrough', 'quote', 'subscript', 'subscript', 
+			        	'orderedlist', 'unorderedlist', 'indent', 'outdent', 'h2', 'h3',  'removeFormat'],
+			    },
+			    imageDragging: false,
+			    paste: {
+			        forcePlainText: false,
+			        cleanPastedHTML: true,
+			        cleanReplacements: [],
+			        cleanAttrs: ['class', 'style', 'id', 'on', 'onclick'],
+			        cleanTags: ['meta', 'script', 'img', 'a']
+			    }
+			});
 			return this;
 		},
 		renderLabelsGroups: function() {
 			var currentUser = Parse.User.current();
 			// var groups = app.labelGroupCollection.models;
-			var groups = app.User.labelGroups.models;
+			var groups = app.loginedUser.labelGroups.models;
 			this.labelSelectors = new Array();
 			this.$el.find('.labelGroups').empty();
 			
 			for (var i = 0; i<groups.length; i++) {					
 				var glabels = new Array();
-				// for (var j = 0; j<app.labelCollection.models.length; j++) {
-				// 	if (app.labelCollection.models[j].get('labelgroup').id == groups[i].id) {
-				// 		glabels.push(app.labelCollection.models[j]);
-				// 	}
-				// };
-				for (var j = 0; j<app.User.labelCollection.models.length; j++) {
-					if (app.User.labelCollection.models[j].get('labelgroup').id == groups[i].id) {
-						glabels.push(app.User.labelCollection.models[j]);
+				for (var j = 0; j<app.loginedUser.labelCollection.models.length; j++) {
+					if (app.loginedUser.labelCollection.models[j].get('labelgroup').id == groups[i].id) {
+						glabels.push(app.loginedUser.labelCollection.models[j]);
 					}
 				};
 
@@ -745,7 +827,7 @@ var s, app = {
 				var selectedLabels = this.model.get('labels');
 				var sLabels = new Array();
 				for (var j = 0; j < selectedLabels.length; j++) {
-					var l = app.User.labelCollection.get(selectedLabels[j].id);
+					var l = app.loginedUser.labelCollection.get(selectedLabels[j].id);
 					if (l.get('labelgroup').id == groups[i].id) {
 						sLabels.push(l);
 					}
@@ -783,12 +865,13 @@ var s, app = {
 				selectedLabels = _.union(selectedLabels, this.labelSelectors[i].selectedLabels);
 			};
 
+			this.model.set('description', $('#editRecipe .description').html());
+			this.model.set('ingredients', $('#editRecipe .ingredients').html());
+			this.model.set('directions', $('#editRecipe .directions').html());
 			this.model.set('labels', selectedLabels);
 			var recipeLanguage = franc(this.model.get('description')+' '+this.model.get('ingredients')+' '+this.model.get('directions'));
 			this.model.set('locale', recipeLanguage); //TODO
 			this.model.set('user', currentUser);
-			this.model.set('avatar', currentUser.get('avatar'));
-			this.model.set('author', currentUser.get('name'));
 			var searchMask = this.model.get('name')+' '+this.model.get('description')+' '+this.model.get('ingredients')+' '+this.model.get('directions');
 			this.model.set('searchMask', app.genSearchMask(searchMask));
 			this.model.set('searchMaskStr', this.model.get('searchMask').join(" ") );
@@ -802,6 +885,7 @@ var s, app = {
 					labelsRelation.add(labels);
 					for (var i = 0; i < labels.length; i++) {
 						ids.push(labels[i].id);
+						//TODO Add to searchmask
 					};
 				}
 				model.set('labelsId', ids);
@@ -810,21 +894,90 @@ var s, app = {
 				if (typeof currentACL === 'undefined') {
 					currentACL = new Parse.ACL();
 				}
+				currentACL.setPublicReadAccess(true);
 				currentACL.setPublicWriteAccess(false);
-				currentACL.setWriteAccess(app.User.id, true);
+				currentACL.setWriteAccess(app.loginedUser.id, true);
 				if(model.get('private')) {
 					currentACL.setPublicReadAccess(false);
-					currentACL.setReadAccess(app.User.id, true);
+					currentACL.setReadAccess(app.loginedUser.id, true);
 				}
 				model.setACL(currentACL)
 
-				model.save();
-				app.loadLabels(app.User);
-				app.spinnerStop();
-				app.viewRecipe(model);
+				//image
+				var imageFile = document.getElementById('image_upload');
+				if (imageFile && imageFile.files.length) {
+					imageFile = imageFile.files[0];
+					var imageExts = {
+					  "image/png":"png",
+					  "image/jpg":"jpg",
+					  "image/jpeg":"jpg"
+					}
+					var imgUrl = 'https://s3.amazonaws.com/'+s.amazonBucket+'/users/'+app.loginedUser.id+'/recipes/'+model.id+'/cover.'+imageExts[imageFile.type];
+					model.set('coverImageUrl',  imgUrl);
+					model.save();
+			        Parse.Cloud.run('awsInfo', {file: 'users/'+app.loginedUser.id+'/recipes/'+model.id+'/cover', fileType: imageFile.type}, {
+			  			success: function(result) {
+							console.log(result)
+							$('[name=Policy]').val(result.policy);
+							$('[name=Signature]').val(result.signature);
+
+							var file = document.getElementById('image_upload').files[0];
+						    var fd = new FormData();
+
+						    fd.append('key', result.key);
+						    fd.append('acl', 'public-read');   
+						    fd.append('Content-Type', file.type);     
+						    fd.append('AWSAccessKeyId', s.AWSAccessKeyId);
+						    fd.append('policy', result.policy)
+						    fd.append('signature', result.signature);
+
+						    fd.append("file",file);
+
+						    var xhr = new XMLHttpRequest();
+
+						    // xhr.upload.addEventListener("progress", uploadProgress, false);
+						    xhr.addEventListener("load", function() {
+						    	console.log('img uploaded');
+						    	var imageTags = $('.recipe-'+app.editRecipeView.model.id+' .image');
+						    	$(imageTags).attr('src', imageTags[0].src +'?' +new Date().getTime());
+
+						    	app.editRecipeView.model.get('user').fetch();
+						    	app.loadLabels(app.loginedUser);
+							    app.spinnerStop();
+								app.viewRecipe(app.editRecipeView.model);
+								app.editRecipeView.remove();
+								if (app.recipeListView) {
+									app.recipeListView.trigger('change');
+								}
+						    }, false);
+						    // xhr.addEventListener("error", uploadFailed, false);
+						    // xhr.addEventListener("abort", uploadCanceled, false);
+
+						    xhr.open('POST', 'https://'+s.amazonBucket+'.s3.amazonaws.com/', true); //MUST BE LAST LINE BEFORE YOU SEND 
+						    xhr.send(fd);
+							// app.editRecipeView.model.save();
+							
+			  			},
+			  			error: function(error) {
+			  				console.log(error);
+			  			}
+					});
+				}
+				//end image
+				else {
+					model.save();
+					model.get('user').fetch();
+					app.loadLabels(app.loginedUser);
+					app.spinnerStop();
+					app.viewRecipe(app.editRecipeView.model);
+					app.editRecipeView.remove();
+					if (app.recipeListView) {
+						app.recipeListView.trigger('change');
+					}
+				}
 			})
 
-			this.remove();
+			// this.remove();
 		},
 		onDiscard:function() {
 			$('.mdl-layout__header-row .recipeName').text('');
@@ -849,8 +1002,17 @@ var s, app = {
 			this.listenTo(this.model, "change", this.render);
 		},
 		render: function() {
-			var html = this.template(this.model.toJSON());
+			var html = this.template({
+				id: this.model.id, 
+				recipe: this.model.toJSON(), 
+				user: this.model.get('user').toJSON()
+			});
 			this.$el.html(html);
+
+			var recipeLabels = this.model.get('labels');
+			for (var j = 0; j < recipeLabels.length; j++) {
+				this.$el.find('.labels').append('<span class="label label-success">' + recipeLabels[j].get('name') + '</span>');
+			};
 			return this;
 		},
 		onRead: function(e) {
@@ -858,21 +1020,23 @@ var s, app = {
 		},
 		onAuthor: function() {
 			// body...
-			app.router.navigate("/u/"+app.genUrlName(this.model.get('author'))+"-"+this.model.get('user').id, {trigger: true});
+			app.router.navigate("/u/"+app.genUrlName(this.model.get('user').get('name'))+"-"+this.model.get('user').id, {trigger: true});
 		}
 	});
 
 	app.RecipeListView = Backbone.View.extend({
 		el: '#recipeResultsList',
 		initialize: function() {
-			this.listenTo(this.collection, 'sync', this.render);
+			this.listenTo(this.collection, 'change', this.render);
+			this.on('change', this.render);
 		},
 		render: function() {
 			var $list = this.$el.empty();
 			var counter = 0;
 			this.collection.each(function(model) {
-				var item = new app.RecipeListItemView({model: model});
-				$list.append(item.render().$el);
+				// var item = new app.RecipeListItemView({model: model});
+				// $list.append(item.render().$el);
+				this.renderOne(model)
 				counter++;
 				if(counter % 2 == 0) {
 					$list.append('<div class="clearfix visible-md-block"></div>');
@@ -882,6 +1046,11 @@ var s, app = {
 				}
 		    }, this);
 
+			return this;
+		},
+		renderOne: function(model) {
+			var item = new app.RecipeListItemView({model: model});
+			this.$el.append( item.render().el );
 			return this;
 		}
 	});
@@ -897,7 +1066,7 @@ var s, app = {
 			this.listenTo(this.model, "change", this.render);
 		},
 		render: function() {
-			var html = this.template({id: this.model.id, data: this.model.toJSON()});
+			var html = this.template({id: this.model.id, recipe: this.model.toJSON()});
 			this.$el.html(html);
 			return this;
 		},
@@ -917,7 +1086,7 @@ var s, app = {
 		},
 		initialize: function() {
 			this.template = _.template(underi18n.template(app.templates.navigationLabelGroup, app.TDict));
-		    this.listenTo(this.collection, 'sync change', this.render);
+		    this.listenTo(this.collection, 'change', this.render);
 		    // this.render();
 		},
 		toggleShow: function() {
@@ -950,7 +1119,7 @@ var s, app = {
 	app.NavigationLabelGroupView = Backbone.View.extend({
 		el: '#LabelGroupsViewPlaceholder',
 		initialize: function() {
-		    this.listenTo(this.collection, 'sync change', this.render);
+		    this.listenTo(this.collection, 'change', this.render);
 		    this.render();
 		},
 		render: function() {
