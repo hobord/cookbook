@@ -7,17 +7,31 @@ var conf = require('cloud/config.js');
 var Crypto = require('crypto');
 var Buffer = require('buffer').Buffer;
 
-
 var imageExts = {
   "image/png":"png",
   "image/jpg":"jpg",
   "image/jpeg":"jpg"
 }
+
+
 Parse.Cloud.define("hello", function(request, response) {
   response.success("Hello world!");
 });
 
+Parse.Cloud.afterDelete("LabelGroup", function(request) {
+  var query = new Parse.Query("Label");
+  query.equalTo("labelgroup", request.object);
 
+  query.find().then(function(labels) {
+    return Parse.Object.destroyAll(labels);
+  }).then(function(success) {
+    // The related label were deleted
+  }, function(error) {
+    console.error("Error deleting related label " + error.code + ": " + error.message);
+  });
+});
+
+// Parse.Cloud.afterDelete("Label", function(request) { // TODO
 
 Parse.Cloud.define("awsInfo", function(request, response) {
 	// var setting = s3_uploader[request.params.uploadType];
@@ -55,3 +69,135 @@ function s3_upload_policy(acl) {
 function s3_upload_signature(acl) {
     return  Crypto.createHmac('sha1',conf.secret_key).update(s3_upload_policy(acl)).digest('base64');
 }
+
+Parse.Cloud.define("initUser", function(request, response) {
+  initUser(request.user);
+});
+Parse.Cloud.afterSave("User", function(request) {
+  var user = request.object;
+  if(!user.get('inited')) {
+    initUser(request);
+  }
+})
+
+function initUser(user) {
+  var locale = user.get('locale');
+  if(locale) {
+    locale = locale.substr(0,2);
+    for (var i = 0; i < deafultLabels[locale].length; i++) {
+    // for (var i = deafultLabels[locale].length - 1; i >= 0; i--) {
+      if (deafultLabels[locale]) {
+        createLabelgroup(deafultLabels[locale][i], user);
+      }
+      else {
+        createLabelgroup(deafultLabels['en'][i], user);
+      };
+    }
+  }
+  user.set('inited', true);
+}
+
+function createLabelgroup(group, user) {
+  var LabelGroup  = Parse.Object.extend("LabelGroup");
+  var newGroup = new LabelGroup();
+  newGroup.set('name', group.name);
+  newGroup.set('weight', group.weight);
+  newGroup.set('user', user);
+
+  var currentACL = newGroup.getACL();
+  if (typeof currentACL === 'undefined') {
+    currentACL = new Parse.ACL();
+  }
+  currentACL.setPublicReadAccess(true);
+  currentACL.setPublicWriteAccess(false);
+  currentACL.setWriteAccess(user.id, true);
+  newGroup.setACL(currentACL);
+  newGroup.save().then(
+    function(newGroup) {
+      for (var i = 0; i < group.labels.length; i++) {
+        createLabel(group.labels[i], newGroup, user);
+      };
+    }, 
+    function (error) {
+      console.log(error);
+  });
+}
+
+function createLabel(newLabelName, group, user) {
+  var Label = Parse.Object.extend("Label");
+  var newLabel = new Label();
+
+  newLabel.set('name', newLabelName);
+  newLabel.set('labelgroup', group);
+  newLabel.set('user', user);
+
+  var currentACL = newLabel.getACL();
+  if (typeof currentACL === 'undefined') {
+    currentACL = new Parse.ACL();
+  }
+  currentACL.setPublicReadAccess(true);
+  currentACL.setPublicWriteAccess(false);
+  currentACL.setWriteAccess(user.id, true);
+  newLabel.setACL(currentACL)
+
+  newLabel.save();
+}
+
+deafultLabels = {
+  en: [
+      { 
+        name: 'Categories',
+        weight: 0,
+        labels: ['dessert','appetizers','főzelékek', 'fruits','fishes','meats','biscuits','garnish','soops','muffins','sauces','pastries, breads', 'breakfasts',' salads', 'poultry', 'tagine', 'pasta', 'vegan', 'vegetables']
+      },
+      { 
+        name: 'Ingredients',
+        weight: 1,
+        labels: ['veal','lamb','chicken','zucchini','pork','duck','couscous','lentils','goose','beef','liver','eggplant','peppers']
+      },
+      { 
+        name: 'Events',
+        weight: 2,
+        labels: ['dinner', 'breakfast', 'dinner', 'wedding', 'Hanukkah', 'Easter', 'Christmas parties', 'birthday']
+      },
+      { 
+        name: 'Nation',
+        weight: 3,
+        labels: ['Greek', 'Indian', 'Israeli', 'Chinese', 'Moroccan', 'Italian', 'Thai', 'Turkish']
+      },
+      { 
+        name: 'Labels',
+        weight: 4,
+        labels: []
+      }
+  ],
+  hu: [
+      { 
+        name: 'Kategóriák',
+        weight: 0,
+        labels: ['desszert','előételek','főzelékek','főételek','gyümölcsök','halak','húsok','kekszek','köretek','levesek','muffinok','mártások','péksütemények, kenyerek','reggelik','saláták','szárnyasok','tagine','tészták','vegán','zöldségek']
+      },
+      { 
+        name: 'Hozzávalók',
+        weight: 1,
+        labels: ['borjú','bárány','csirke','cukkini','disznó','kacsa','kuszkusz','lencse','liba','marha','máj','padlizsán','paprika']
+      },
+      { 
+        name: 'Események',
+        weight: 2,
+        labels: ['vacsora','reggeli','ebéd','esküvő','hanuka','húsvét','karácsony','partyk','születésnap']
+      },
+      { 
+        name: 'Nemzet',
+        weight: 3,
+        labels: ['görög','indiai','izraeli','kínai','marokkói','olasz','thai','török']
+      },
+      { 
+        name: 'Cimkék',
+        weight: 4,
+        labels: []
+      }
+
+  ],
+}
+
