@@ -1,0 +1,35 @@
+CACHE MANIFEST
+# 2015-07-26:v5
+
+# Explicitly cached 'master entries'.
+CACHE:
+/icon_32.png
+/icon_192.png
+/index.html
+/css/app.css
+/bower_components/franc/dist/franc.js
+/bower_components/backbone.typeahead/backbone.typeahead.js
+/js/backbone.labelselector.js
+/bower_components/underi18n/underi18n.js
+//ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js
+//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js
+//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.2.1/backbone-min.js
+//www.parsecdn.com/js/parse-1.4.2.js
+//cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js
+//cdn.jsdelivr.net/medium-editor/latest/js/medium-editor.min.js
+//cdn.jsdelivr.net/medium-editor/latest/css/medium-editor.min.css
+//cdn.jsdelivr.net/medium-editor/latest/css/themes/default.min.css
+//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css
+//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css
+//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js
+//storage.googleapis.com/code.getmdl.io/1.0.0/material.green-deep_orange.min.css
+//fonts.googleapis.com/css?family=Roboto:regular,bold,italic,thin,light,bolditalic,black,medium&amp;lang=en
+//fonts.googleapis.com/icon?family=Material+Icons
+//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js
+//www.google-analytics.com/analytics.js
+//connect.facebook.net/en_US/sdk.js
+/js/app.js
+# Resources that require the user to be online.
+NETWORK:
+*
+

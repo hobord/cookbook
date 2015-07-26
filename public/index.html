@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" manifest="cookbook.appcache">
   <head>
     <title>Cookbook</title>
 
@@ -15,8 +15,8 @@
     <meta name="apple-mobile-web-app-title" content="My Cookbook">
     <link rel="apple-touch-icon" href="/icon_512.png" />
 
-    <link rel="shortcut icon" sizes="16x16" type="image/png" href="/icon_16.png" />
-    <link rel="shortcut icon" sizes="16x16" type="image/png" href="http://cookbook.local/icon_16.png" />
+    <link rel="shortcut icon" sizes="32x32" type="image/png" href="/icon_32.png" />
+    <!-- <link rel="shortcut icon" sizes="16x16" type="image/png" href="http://cookbook.local/icon_16.png" /> -->
 
     <!-- <meta name="theme-color" content="#263238"> -->
     <meta name="application-name" content="My Cookbook">
@@ -35,8 +35,7 @@
  -->
 
   <!-- Parse.com -->
-    <!-- <script src="//www.parsecdn.com/js/parse-1.4.2.min.js"></script> -->
-    <script src="//www.parsecdn.com/js/parse-1.4.2.js"></script>
+    <script src="//www.parsecdn.com/js/parse-1.4.2.min.js"></script>
     <!-- <script type="text/javascript" src="js/parse-1.4.2.min.js"></script> -->
   
   <!-- Plugins -->
@@ -54,6 +53,7 @@
     <script src="//cdn.jsdelivr.net/medium-editor/latest/js/medium-editor.min.js"></script>
     <link rel="stylesheet" href="//cdn.jsdelivr.net/medium-editor/latest/css/medium-editor.min.css" type="text/css" media="screen" charset="utf-8">
     <link rel="stylesheet" href="//cdn.jsdelivr.net/medium-editor/latest/css/themes/default.min.css" type="text/css" media="screen" charset="utf-8">
+
 
   <!-- bootstrap -->
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
@@ -89,8 +89,8 @@
     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
-      // ga('create', 'UA-5658990-6', 'auto');
-      // ga('send', 'pageview');
+    ga('create', 'UA-5658990-11', 'auto');
+    ga('send', 'pageview');
 
     </script>
   <!-- App -->

@@ -272,7 +272,7 @@ var s, app = {
 			    	$('.mdl-layout-title').html(app.recipesFiltermanager.get('user').get('name') + app.localeDict('s_recipes'));
 			    	if (ga) {
 					    ga('set', {
-						  page: '/#u/u-'+app.recipesFiltermanager.get('user').id,
+						  page: '/#u/_'+app.genUrlName(app.recipesFiltermanager.get('user').get('name'))+'-'+app.recipesFiltermanager.get('user').id,
 						  title: app.recipesFiltermanager.get('user').get('name')+"'s recipes"
 						});
 					    ga('send', 'pageview');
@@ -290,7 +290,7 @@ var s, app = {
 			    	$('.mdl-layout-title').html(app.recipesFiltermanager.get('user').get('name') + app.localeDict('s_recipes'));
 			    	if (ga) {
 					    ga('set', {
-						  page: '/#u/u-'+app.recipesFiltermanager.get('user').id,
+						  page: '/#u/_'+app.genUrlName(app.recipesFiltermanager.get('user').get('name'))+'-'+app.recipesFiltermanager.get('user').id,
 						  title: app.recipesFiltermanager.get('user').get('name')+"'s recipes"
 						});
 					    ga('send', 'pageview');
@@ -410,7 +410,7 @@ var s, app = {
     	app.switchLayout('edit');
     },
     viewRecipe: function(recipe) {
-    	app.router.navigate( "/recipe/"+app.genUrlName(recipe.get('name'))+"-"+recipe.id, { trigger: false } );
+    	app.router.navigate( "/recipe/_"+app.genUrlName(recipe.get('name'))+"-"+recipe.id, { trigger: false } );
     	this.recipeView = new app.RecipeView({model: recipe});
     	app.switchLayout('view');
     },
@@ -420,8 +420,8 @@ var s, app = {
     	var re = /[^A-Za-z\u0590-\u05FF\ ]/g;
 		return _.uniq(removeDiacritics(text).replace(re, '').replace(/(.)\1{1,}/g, '$1').replace(/\b[a-z]{1,2}\b/g, '').replace(/(.)\1{1,}/g, '$1').split(' '));
 	},
-	genUrlName:function(text) {
-		return text.replace(/\-/g, '_');
+	genUrlName: function(text) {
+		return removeDiacritics(text+' $2!₪%$#דשגד').replace(/[^A-Za-z\ ]/g,'').replace(/\ /g,'_');
 	},
 	renderRecipeList: function(recipeList) {
 		this.recipeListView = new app.RecipeListView({collection: recipeList});
@@ -774,7 +774,7 @@ var s, app = {
 			if (app.loginedUser) {
 				app.recipesFiltermanager.set( { user: app.loginedUser }, { validate:true } );
 				app.recipesFiltermanager.set('favorites', false);
-				app.router.navigate("/u/"+app.loginedUser.get('name')+"-"+app.loginedUser.id, {trigger: false});
+				app.router.navigate("/u/"+app.genUrlName(app.loginedUser.get('name'))+"-"+app.loginedUser.id, {trigger: false});
 				app.switchLayout('user');
 				app.recipesFiltermanager.search();
 			}
@@ -909,7 +909,7 @@ var s, app = {
 			FB.ui({
 			  method: 'share',
 			  display : "popup",
-			  href: "http://cbook.parseapp.com/#recipe/r-"+this.model.id,
+			  href: "http://cbook.parseapp.com/#recipe/_"+app.genUrlName(this.model.get('name'))+"-"+this.model.id,
 			  name: this.model.get('name'),
 			  title: this.model.get('name'),
 			  picture: this.model.get('coverImageUrl'),
@@ -952,23 +952,6 @@ var s, app = {
 			$('.upload_image').on('click', function() {
 				$('#image_upload').click();
 			});
-			// Dropzone.options.myDropzone = {
-			//   init: function() {
-			//     this.on("processing", function(file) {
-			//       this.options.url = "/some-other-url";
-			//     });
-			//   }
-			// };
-			// var myDropzone = new Dropzone(".upload_image",{
-		 //        url: 'fake',
-		 //        createImageThumbnails: false,
-		 //        paramName: "file", // The name that will be used to transfer the file
-		 //        enqueueForUpload: false
-		 //    });
-
-			// myDropzone.on("addedfile", function(file) {
-			// /* Maybe display some more file information on your page */
-			// });
 
 			$('#image_upload').change(function (e) {
 			    for (var i = 0; i < e.originalEvent.srcElement.files.length; i++) {
@@ -986,6 +969,7 @@ var s, app = {
 				toolbar: {
 			        buttons: ['bold', 'italic', 'underline', 'strikethrough', 'quote', 'subscript', 'subscript', 
 			        	'orderedlist', 'unorderedlist', 'indent', 'outdent', 'h2', 'h3',  'removeFormat'],
+		        	static: true
 			    },
 			    imageDragging: false,
 			    paste: {
@@ -996,6 +980,7 @@ var s, app = {
 			        cleanTags: ['meta', 'script', 'img']
 			    }
 			});
+
 			return this;
 		},
 		renderLabelsGroups: function() {
@@ -1302,7 +1287,7 @@ var s, app = {
 			FB.ui({
 			  method: 'share',
 			  display : "popup",
-			  href: "http://cbook.parseapp.com/#recipe/r-"+this.model.id,
+			  href: "http://cbook.parseapp.com/#recipe/_"+app.genUrlName(this.model.get('name'))+"-"+this.model.id,
 			  name: this.model.get('name'),
 			  title: this.model.get('name'),
 			  picture: this.model.get('coverImageUrl'),
