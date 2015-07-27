@@ -1069,13 +1069,14 @@ var s, app = {
 			var div = document.createElement("div");
 			div.innerHTML = text;
 			text = div.textContent || div.innerText || "";
+			var coverImageUrl = (this.model.get('coverImageUrl'))?this.model.get('coverImageUrl'):'https://s3.amazonaws.com/cookbookimg/icon_256.png'; 
 			FB.ui({
 			  method: 'share',
 			  display : "popup",
 			  href: "http://cbook.parseapp.com/#recipe/_"+app.genUrlName(this.model.get('name'))+"-"+this.model.id,
 			  name: this.model.get('name'),
 			  title: this.model.get('name'),
-			  picture: this.model.get('coverImageUrl'),
+			  picture: coverImageUrl,
 			  description: text
 			});
 			return true;
@@ -1437,13 +1438,14 @@ var s, app = {
 			var div = document.createElement("div");
 			div.innerHTML = text;
 			text = div.textContent || div.innerText || "";
+			var coverImageUrl = (this.model.get('coverImageUrl'))?this.model.get('coverImageUrl'):'https://s3.amazonaws.com/cookbookimg/icon_256.png'; 
 			FB.ui({
 			  method: 'share',
 			  display : "popup",
 			  href: "http://cbook.parseapp.com/#recipe/_"+app.genUrlName(this.model.get('name'))+"-"+this.model.id,
 			  name: this.model.get('name'),
 			  title: this.model.get('name'),
-			  picture: this.model.get('coverImageUrl'),
+			  picture: coverImageUrl,
 			  description: text
 			});
 			return true;
