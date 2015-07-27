@@ -948,8 +948,13 @@ var s, app = {
 			}
 			return false;
 		},
-		onFollowedPeople: function() {
-			$('#FollowedPeoplePlaceholder').toggleClass('hide');
+		onFollowedPeople: function(e) {
+			if (app.loginedUser) {
+				$('#FollowedPeoplePlaceholder').toggleClass('hide');
+			}
+			else {
+				app.applicationView.facebookLogin(e);
+			}
 			return false;
 		},
 		listAllRecipes: function() {
