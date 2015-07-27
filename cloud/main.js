@@ -58,6 +58,7 @@ function s3_upload_policy(acl) {
                     {"acl":acl},
                     ["starts-with","$key", "users/"],
                     ["starts-with", "$Content-Type", ""],
+                    ["starts-with", "$Cache-Control", ""],
                     // {"success_action_status": "201"}
                   ]};
     var buf = new Buffer(JSON.stringify(policy),'utf8');
@@ -146,22 +147,22 @@ function createLabel(newLabelName, group, user) {
 deafultLabels = {
   en: [
       { 
-        name: 'Categories',
+        name: 'Course',
         weight: 0,
-        labels: ['dessert','appetizers','főzelékek', 'fruits','fishes','meats','biscuits','garnish','soops','muffins','sauces','pastries, breads', 'breakfasts',' salads', 'poultry', 'tagine', 'pasta', 'vegan', 'vegetables']
+        labels: ['Main dish','Appetizers & snacks ','Desserts','Side dishes','Soup','Salad','Fish','Meat']
       },
       { 
-        name: 'Ingredients',
+        name: 'Main ingedients',
         weight: 1,
         labels: ['veal','lamb','chicken','zucchini','pork','duck','couscous','lentils','goose','beef','liver','eggplant','peppers']
       },
       { 
-        name: 'Events',
+        name: 'Holiday/Party',
         weight: 2,
-        labels: ['dinner', 'breakfast', 'dinner', 'wedding', 'Hanukkah', 'Easter', 'Christmas parties', 'birthday']
+        labels: ['dinner', 'breakfast', 'wedding', 'Hanukkah', 'Easter', 'Christmas parties', 'birthday']
       },
       { 
-        name: 'Nation',
+        name: 'Cuisine',
         weight: 3,
         labels: ['Greek', 'Indian', 'Israeli', 'Chinese', 'Moroccan', 'Italian', 'Thai', 'Turkish']
       },

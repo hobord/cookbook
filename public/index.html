@@ -1,8 +1,8 @@
 
 <!DOCTYPE html>
-<html lang="en" manifest="cookbook.appcache">
+<html lang="en">
   <head>
-    <title>Cookbook</title>
+    <title>Just Food You</title>
 
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -12,18 +12,16 @@
     <!-- Add to homescreen for Safari on iOS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="green">
-    <meta name="apple-mobile-web-app-title" content="My Cookbook">
+    <meta name="apple-mobile-web-app-title" content="Just Food You">
     <link rel="apple-touch-icon" href="/icon_512.png" />
 
     <link rel="shortcut icon" sizes="32x32" type="image/png" href="/icon_32.png" />
     <!-- <link rel="shortcut icon" sizes="16x16" type="image/png" href="http://cookbook.local/icon_16.png" /> -->
 
-    <!-- <meta name="theme-color" content="#263238"> -->
-    <meta name="application-name" content="My Cookbook">
+    <meta name="theme-color" content="#263238">
+    <meta name="application-name" content="Just Food You">
     <meta name="description" content="Cookbook web application">
-
-
-  <!-- JQuery for Bootstrap and Parse-->
+<!-- JQuery for Bootstrap and Parse-->
     <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <!-- <script type="text/javascript" src="js/jquery.min.js"></script> -->
 
@@ -98,10 +96,6 @@
     <script type="text/javascript" src="js/app.js"></script>
 
     <script type="text/javascript">
-      $(document).ready(function() {
-          // App init
-          app.init();
-      });
     //Facebook init
       (function(d, s, id){
           var js, fjs = d.getElementsByTagName(s)[0];
@@ -110,7 +104,17 @@
           js.src = "//connect.facebook.net/en_US/sdk.js";
           fjs.parentNode.insertBefore(js, fjs);
       }(document, 'script', 'facebook-jssdk'));
+
+      $(document).ready(function() {
+          // App init
+          app.init();
+      });
+    
     </script>
+  
+
+
+
   
 
 
@@ -304,7 +308,7 @@
       </header>
       <div class="app-drawer mdl-layout__drawer mdl-color--light-green-900 mdl-color-text--light-green-50">
         <header class="app-drawer-header">
-          <img src="/icon_512.png" class="filter-user-avatar"><span class='filter-user-name'></span>
+          <img src="/icon_512.png" class="filter-user-avatar"><span class='filter-user-name'>Just Food You</span>
         </header>
         <nav class="app-navigation mdl-navigation mdl-color--light-green-800">
 
@@ -328,6 +332,13 @@
             </button>
             <ul class="mdl-menu mdl-menu--top-right mdl-js-menu mdl-js-ripple-effect" for="accbtn">
               <button class="mdl-menu__item btnLogout"><%_ Logout %></button>
+            </ul>
+            <button id="btnLng" class="pull-right mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--icon">
+              hu
+            </button>
+            <ul class="mdl-menu mdl-menu--top-right mdl-js-menu mdl-js-ripple-effect" for="btnLng">
+              <button class="mdl-menu__item changeLang" data='en'>en</button>
+              <button class="mdl-menu__item changeLang" data='hu'>hu</button>
             </ul>
           </div> 
 

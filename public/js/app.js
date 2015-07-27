@@ -5,7 +5,6 @@ var s, app = {
     	applicationId: "uJLDpdzRo0AS07SHiXDRUR6dX2egvU9rKcbHkIMP",
     	applicationKey: "LkeF59Hh5HXrketX8qw6SFWwFALnVu8vqJKwkp5n",
     	// facebookAppId: "890469204379378", // Production
-    	// facebookAppId: "900908010002164", //Test
     	facebookAppId: "905249916234640", //Test
     	AWSAccessKeyId: "AKIAJ5EPMLPXAQVXTNPQ",
     	amazonBucket: "cookbookimg"
@@ -109,6 +108,16 @@ var s, app = {
     	} else {
 			this.localeDict = underi18n.MessageFactory('en');
     	}
+    },
+    chanegLocale: function(localeCode) {
+    	this.setAppLocale(localeCode);
+    	if(app.loginedUser) {
+    		app.loginedUser.set('locale',localeCode);
+    		app.loginedUser.save().then(function(){
+    			location.reload();
+    		});
+    	}
+
     },
     loadTemplates: function() {
     	_.each(this.templates, function(item, key){
@@ -306,7 +315,7 @@ var s, app = {
 			    $('.mdl-layout-title').html(app.recipeView.model.get('name'));
 			    if (ga) {
 				    ga('set', {
-					  page: '/#recipe/r-'+app.recipeView.model.id,
+					  page: '/#recipe/_'+app.genUrlName(app.recipeView.model.get('name'))+'-'+app.recipeView.model.id,
 					  title: app.recipeView.model.get('name')
 					});
 					ga('send', 'pageview');
@@ -318,7 +327,7 @@ var s, app = {
 		    	$('.mdl-layout-title').html(app.editRecipeView.model.get('name'));
 		    	if (ga) {
 				    ga('set', {
-					  page: '/#editRecipe/r-'+app.editRecipeView.model.id,
+					  page: '/#editRecipe/_'+app.genUrlName(app.recipeView.model.get('name'))+'-'+app.editRecipeView.model.id,
 					  title: app.editRecipeView.model.get('name')
 					});
 					ga('send', 'pageview');
@@ -330,6 +339,7 @@ var s, app = {
     createLabelgroup: function(newGroupName) {
 		var newGroup = new app.LabelGroup();
     	newGroup.set('name', newGroupName);
+    	newGroup.set('weight', 10);
         newGroup.set('user', app.loginedUser);
 
 		var currentACL = newGroup.getACL();
@@ -455,7 +465,7 @@ var s, app = {
 				else {
 					// $('.filter-user-avatar').attr('src','images/user.png');
 					$('.filter-user-avatar').attr('src','/icon_512.png');
-					$('.filter-user-name').html('');
+					$('.filter-user-name').html(app.localeDict('AllPublic'));
 				}
 
 				if(attrs.user==null) {
@@ -674,6 +684,11 @@ var s, app = {
 				if (param[0] == 'f') {
 					app.recipesFiltermanager.set( { favorites: true }, { validate: true } );
 				}
+				if (param[0] == 't') {
+					app.recipesFiltermanager.set( { text: param[1] }, { validate: true } );
+					$('#search').val(param[1]);
+					$('.app-header .mdl-textfield--expandable').addClass('is-focused');
+				}
 			};
 
 			if (typeof app.recipesFiltermanager.get('user') == 'string') {
@@ -710,7 +725,9 @@ var s, app = {
 			'click .cmdListAllRecipes'       : 'listAllRecipes',
 			'click .cmdListFavoritedRecipes' : 'listFavoritedRecipes',
 			'click .btnSignIn' 				 : 'facebookLogin',
-			'click .btnLogout'				 : 'logout'
+			'click .app-user-name'			 : 'listMyRecipes',
+			'click .btnLogout'				 : 'logout',
+			'click .changeLang'				 : 'onChangelang'
 		},
 		initialize: function() {
 			this.template = _.template(underi18n.template(app.templates.application, app.localeDict));
@@ -724,7 +741,12 @@ var s, app = {
 			var html = $(this.template({user:user}));
 			this.$el.html(html);
 			componentHandler.upgradeAllRegistered();
+
+			$('#btnLng').text(app.localeCode);
 			return this;
+		},
+		onChangelang: function(event) {
+			app.chanegLocale($(event.target).attr('data'))
 		},
 		facebookLogin: function(e){
             Parse.FacebookUtils.logIn("public_profile,email,user_birthday,user_hometown,user_location,publish_actions,user_likes", {
@@ -1130,7 +1152,8 @@ var s, app = {
 
 						    fd.append('key', result.key);
 						    fd.append('acl', 'public-read');   
-						    fd.append('Content-Type', file.type);     
+						    fd.append('Content-Type', file.type);
+						    fd.append('Cache-Control', 'max-age='+3600*24*7);     
 						    fd.append('AWSAccessKeyId', s.AWSAccessKeyId);
 						    fd.append('policy', result.policy)
 						    fd.append('signature', result.signature);
@@ -1309,7 +1332,7 @@ var s, app = {
 			this.collection.each(function(model) {
 				// var item = new app.RecipeListItemView({model: model});
 				// $list.append(item.render().$el);
-				if(counter==2) {
+				if(counter==5) {
 					$list.append(this.renderAd());
 					(adsbygoogle = window.adsbygoogle || []).push({});
 				}
@@ -1508,7 +1531,8 @@ var s, app = {
 			'editRecipePrepTime'      : 'Preparation time (minute): ',
 			'editRecipeCookTime'      : ', cook time: ',
 			'editRecipeMakeTime'      : ', sum make time: ',
-			'makeTime'				  : 'Make time (minute):'
+			'makeTime'				  : 'Make time (minute):',
+			'AllPublic'				  : 'All shared'
 		},
 		'hu' : {
 			'All'				: 'Összes',
@@ -1543,7 +1567,8 @@ var s, app = {
 			'editRecipePrepTime'      : 'Előkészölés ideje (perc):',
 			'editRecipeCookTime'      : ', elkészítés ideje:',
 			'editRecipeMakeTime'      : ', összesen:',
-			'makeTime'				  : 'Elkészítése (perc):'
+			'makeTime'				  : 'Elkészítése (perc):',
+			'AllPublic'				  : 'Összes megosztott'
 		} 
 
 	};
