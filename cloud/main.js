@@ -149,7 +149,7 @@ deafultLabels = {
       { 
         name: 'Course',
         weight: 0,
-        labels: ['Main dish','Appetizers & snacks ','Desserts','Side dishes','Soup','Salad','Fish','Meat']
+        labels: ['Main dish','Appetizers & snacks ','Desserts','Side dishes','Soup','Salad','Fish','Meat','Vegetables']
       },
       { 
         name: 'Main ingedients',
@@ -159,7 +159,7 @@ deafultLabels = {
       { 
         name: 'Holiday/Party',
         weight: 2,
-        labels: ['dinner', 'breakfast', 'wedding', 'Hanukkah', 'Easter', 'Christmas parties', 'birthday']
+        labels: ['dinner', 'breakfast', 'Wedding', 'Hanukkah', 'Easter', 'Christmas parties', 'Birthday']
       },
       { 
         name: 'Cuisine',
@@ -167,8 +167,13 @@ deafultLabels = {
         labels: ['Greek', 'Indian', 'Israeli', 'Chinese', 'Moroccan', 'Italian', 'Thai', 'Turkish']
       },
       { 
-        name: 'Labels',
+        name: 'Healthy/Special',
         weight: 4,
+        labels: ['Vegan','Kosher','Diabetic','Gluten free']
+      },
+      { 
+        name: 'Labels',
+        weight: 5,
         labels: []
       }
   ],
@@ -194,8 +199,13 @@ deafultLabels = {
         labels: ['görög','indiai','izraeli','kínai','marokkói','olasz','thai','török']
       },
       { 
-        name: 'Cimkék',
+        name: 'Étrend',
         weight: 4,
+        labels: ['Vegán','Kosher','Diabetic','Glutén free']
+      },
+      { 
+        name: 'Cimkék',
+        weight: 5,
         labels: []
       }
 

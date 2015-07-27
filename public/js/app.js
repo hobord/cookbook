@@ -4,8 +4,8 @@ var s, app = {
     settings: {
     	applicationId: "uJLDpdzRo0AS07SHiXDRUR6dX2egvU9rKcbHkIMP",
     	applicationKey: "LkeF59Hh5HXrketX8qw6SFWwFALnVu8vqJKwkp5n",
-    	// facebookAppId: "890469204379378", // Production
-    	facebookAppId: "905249916234640", //Test
+    	facebookAppId: "890469204379378", // Production
+    	// facebookAppId: "905249916234640", //Test
     	AWSAccessKeyId: "AKIAJ5EPMLPXAQVXTNPQ",
     	amazonBucket: "cookbookimg"
     },
@@ -457,6 +457,10 @@ var s, app = {
 	    validate: function(attrs) {
 	    	if ( _.has(attrs,"user") ) {
 				app.loadLabels(attrs.user);
+				
+				this.set('text','');
+				$('#search').val('');
+				$('.app-header .mdl-textfield--expandable').removeClass('is-focused');
 
 				if(attrs.user) {
 					$('.filter-user-avatar').attr('src',attrs.user.get('avatar'));
@@ -470,6 +474,15 @@ var s, app = {
 
 				if(attrs.user==null) {
 					this.set('labels', []);
+
+					var user = new Parse.User();
+					if (app.localeCode=='hu') {
+						user.id = 'KiswlE2QF5';
+					}
+					else {
+	 					user.id ='BoInDweJu3';
+					}
+					app.loadLabels(user);
 				}
 			}
 	  	},
@@ -498,9 +511,15 @@ var s, app = {
 			if (index == -1) {
 				labels.push(label);
 				this.set('allPublicAcces', false);
+				app.recipesFiltermanager.set('text',label.get('name'));
+				$('#search').val(label.get('name'));
+				$('.app-header .mdl-textfield--expandable').addClass('is-focused');
 			}
 			else {
 				labels.splice(index, 1);
+				app.recipesFiltermanager.set('text','');
+				$('#search').val('');
+				$('.app-header .mdl-textfield--expandable').removeClass('is-focused');
 			}
 			// this.set( { labels: labels }, { validate:true } );
 			this.set( { labels: labels } );
@@ -553,27 +572,29 @@ var s, app = {
 		    			navigationParams.push('k='+keywords.join(','));
 			    	}
 				}
-				// labels
-		    	var labels = this.get('labels');
-		    	$('.app-navigation').find('.label').removeClass('mdl-color-text--light-green-400');
-		    	$('.app-navigation').find('.label').addClass('mdl-color-text--light-green-900');
-				if ( Array.isArray(labels) && labels.length ) {
-					var ids = [];
-					for (var i = 0; i < labels.length; i++) {
-						var labelId = (labels[i].id)?labels[i].id:labels[i];
-						ids.push( labelId );
 
-						$('.label-'+labelId).addClass('mdl-color-text--light-green-400');
-						$('.label-'+labelId).removeClass('mdl-color-text--light-green-900');
-					};
-					qRecipe.containsAll("labelsId", ids);  // AND
-					// qRecipe.containedIn("labelsId", ids); //OR
-
-					navigationParams.push('l='+ids.join(','));
-				}
-
-				// user
 				if( this.get('user') != null ) {
+					
+					// labels
+			    	var labels = this.get('labels');
+			    	$('.app-navigation').find('.label').removeClass('mdl-color-text--light-green-400');
+			    	$('.app-navigation').find('.label').addClass('mdl-color-text--light-green-900');
+					if ( Array.isArray(labels) && labels.length ) {
+						var ids = [];
+						for (var i = 0; i < labels.length; i++) {
+							var labelId = (labels[i].id)?labels[i].id:labels[i];
+							ids.push( labelId );
+
+							$('.label-'+labelId).addClass('mdl-color-text--light-green-400');
+							$('.label-'+labelId).removeClass('mdl-color-text--light-green-900');
+						};
+						qRecipe.containsAll("labelsId", ids);  // AND
+						// qRecipe.containedIn("labelsId", ids); //OR
+
+						navigationParams.push('l='+ids.join(','));
+					}
+
+					// user
 					qRecipe.equalTo('user', this.get('user'));
 					if (currentUser && currentUser.id == this.get('user').id) {
 						$('.app-navigation').find('.cmdListMyRecipes i').addClass('mdl-color-text--light-green-400');
@@ -710,6 +731,7 @@ var s, app = {
 		},
 		defaultRoute: function(argument) {
 			app.switchLayout('list');
+			app.recipesFiltermanager.set({user: null}, {validate: true});
 			app.recipesFiltermanager.search();
 		}
 	});
@@ -1668,5 +1690,5 @@ function removeDiacritics (str) {
   }
 
   return str;
-
 }
+
