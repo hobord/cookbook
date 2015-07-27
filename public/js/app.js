@@ -498,7 +498,9 @@ var s, app = {
     },
     cloneRecipe: function(orig) {
     	var currentUser = Parse.User.current();
+    	var originalWriter = (orig.get('originalWriter'))?orig.get('originalWriter'):orig.get('user');
     	newRecipe = new app.Recipe({
+			originalWriter: originalWriter,
 			name          : orig.get('name'),
 			coverImageUrl : orig.get('coverImageUrl'),
 			description   : orig.get('description'),
@@ -726,6 +728,8 @@ var s, app = {
 			// include
 			qRecipe.include('labels');
 			qRecipe.include('user');
+			qRecipe.include('originalWriter');
+			qRecipe.include('originalWriter');
  
 			// do it
 			app.spinnerStart();
@@ -777,6 +781,7 @@ var s, app = {
 			// include
 			rQuery.include('labels');
 			rQuery.include('user');
+			rQuery.include('originalWriter');
 			rQuery.find().then(function (list) {
 				app.viewRecipe(list[0]);
 				app.switchLayout('view');
@@ -1004,6 +1009,7 @@ var s, app = {
 			'click .btnEdit'     : 'onEdit',
 			'click .btnClone'    : 'onClone',
 			'click .author'      : 'onAuthor',
+			'click .originalWriter': 'onOriginalWriter',
 			'click .close'       : 'onDiscard',
 			'click .add-favorite': 'onToggleFavorite',
 			'click .share'		 : 'onShare'
@@ -1020,10 +1026,12 @@ var s, app = {
 			return this;
 		},
 		render: function() {
+			var owriter = (this.model.get('originalWriter'))?this.model.get('originalWriter').toJSON():null;
 			var html = this.template({
 				id: this.model.id, 
 				recipe: this.model.toJSON(), 
 				user: this.model.get('user').toJSON(),
+				owriter: owriter,
 				favorited : (app.favoritedRecipes.get(this.model.id))?true:false
 			});
 
@@ -1045,6 +1053,10 @@ var s, app = {
 		onAuthor: function() {
 			// body...
 			app.router.navigate("/u/"+app.genUrlName(this.model.get('user').get('name'))+"-"+this.model.get('user').id, {trigger: true});
+		},
+		onOriginalWriter: function() {
+			// body...
+			app.router.navigate("/u/"+app.genUrlName(this.model.get('originalWriter').get('name'))+"-"+this.model.get('originalWriter').id, {trigger: true});
 		},
 		onEdit: function() {
 			app.editRecipe(this.model);
@@ -1692,7 +1704,8 @@ var s, app = {
 			'editRecipeMakeTime'      : ', sum make time: ',
 			'makeTime'				  : 'Make time (minute):',
 			'AllPublic'				  : 'All shared',
-			'FavoritedPeople'		  : 'Friends'
+			'FavoritedPeople'		  : 'Friends',
+			'originalWriter'		  : 'Original writer'
 		},
 		'hu' : {
 			'All'				: 'Összes',
@@ -1729,7 +1742,8 @@ var s, app = {
 			'editRecipeMakeTime'      : ', összesen:',
 			'makeTime'				  : 'Elkészítése (perc):',
 			'AllPublic'				  : 'Összes megosztott',
-			'FavoritedPeople'		  : 'Barátok'
+			'FavoritedPeople'		  : 'Barátok',
+			'originalWriter'		  : 'Eredetileg lejegyezte'
 		} 
 
 	};

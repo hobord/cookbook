@@ -331,6 +331,14 @@ div.mdl-navigation{
 	cursor:pointer;	
 	max-height: 350px;
 }
+div.originalWriter {
+  cursor:pointer; 
+  padding: 20px;
+}
+div.originalWriter img {
+  cursor:pointer; 
+  margin-left: 10px;
+}
 /*----------------------------------------------------------------------------*/
 .recipeListItem .labels {
 	overflow: hidden;

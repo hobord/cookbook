@@ -202,6 +202,10 @@
     <div class="mdl-card__supporting-text recipe-short-desc">
       <%= recipe.directions %>
     </div>
+    <% if(owriter) { %>
+        <div class="originalWriter"><%_ originalWriter %>:<img src="<%= owriter.avatar %>" alt="<%= owriter.name %>" title="<%= owriter.name %>" class="originalWriter img-circle app-avatar-small"><%= owriter.name %></div>
+    <% } %>
+
     <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-8159881314741914" data-ad-slot="9788966330" data-ad-format="auto"></ins>
     <div class="labels mdl-card--border">
 
