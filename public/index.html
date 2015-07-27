@@ -7,7 +7,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- <meta name="mobile-web-app-capable" content="yes"> -->
+    <meta name="mobile-web-app-capable" content="yes">
     <link rel="icon" sizes="192x192" href="/icon_192.png" />
     <!-- Add to homescreen for Safari on iOS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -18,7 +18,7 @@
     <link rel="shortcut icon" sizes="32x32" type="image/png" href="/icon_32.png" />
     <!-- <link rel="shortcut icon" sizes="16x16" type="image/png" href="http://cookbook.local/icon_16.png" /> -->
 
-    <meta name="theme-color" content="#263238">
+    <meta name="theme-color" content="green">
     <meta name="application-name" content="Just Food You">
     <meta name="description" content="Cookbook web application">
 <!-- JQuery for Bootstrap and Parse-->
@@ -117,7 +117,14 @@
 
   
 
-
+<script type="text/template" id="followedUserList-tmpl">
+<div class='app-navigation mdl-navigation mdl-color--light-green-800'>
+  <div class="labels"></div>
+</div>
+</script>
+<script type="text/template" id="followedUserItem-tmpl">
+<i class="mdl-color-text--light-green-900 material-icons">person</i><span><%= user.name %></span>
+</script>
 
 
 <script type="text/template" id="navigationLabelGroup-tmpl">
@@ -284,6 +291,9 @@
     <div class="app-layout mdl-layout mdl-js-layout mdl-layout--fixed-drawer mdl-layout--fixed-header">
       <header class="app-header mdl-layout__header mdl-color--white mdl-color--grey-100 mdl-color-text--grey-600">
         <div class="mdl-layout__header-row">
+          <a class="add-favorite pull-right mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect mdl-button--colored ">
+            <i class="material-icons">favorite_border</i>
+          </a>
           <span class="mdl-layout-title"></span>
           <div class="mdl-layout-spacer"></div>
           <div class="mdl-spinner mdl-js-spinner appSpinner"></div>
@@ -300,9 +310,9 @@
             <i class="material-icons">more_vert</i>
           </button>
           <ul class="mdl-menu mdl-js-menu mdl-js-ripple-effect mdl-menu--bottom-right" for="hdrbtn">
-            <li class="mdl-menu__item"><%_ About %></li>
-            <li class="mdl-menu__item"><%_ Contact %></li>
-            <li class="mdl-menu__item"><%_ Legal_information %></li>
+            <li class="mdl-menu__item onAbout"><%_ About %></li>
+            <li class="mdl-menu__item onContact"><%_ Contact %></li>
+            <li class="mdl-menu__item onPrivacy"><%_ Legal_information %></li>
           </ul>
         </div>
       </header>
@@ -315,8 +325,10 @@
           <a class="cmdListAllRecipes mdl-navigation__link topnav" href=""><i class="mdl-color-text--light-green-400 material-icons">cloud</i><%_ All %></a>
           <a class="cmdListMyRecipes mdl-navigation__link topnav" href=""><i class="mdl-color-text--light-green-900 material-icons">face</i><%_ My %></a>
           <a class="cmdListFavoritedRecipes mdl-navigation__link topnav" href=""><i class="mdl-color-text--light-green-900 material-icons">favorite</i><%_ Favorites %></a>
+          <a class="cmdListFollowedPeople mdl-navigation__link topnav" href=""><i class="mdl-color-text--light-green-900 material-icons">people</i><%_ FavoritedPeople %></a>
 
-          <!-- <div class="catalogTitle">Labels / Catalog</div> -->
+          <div id="FollowedPeoplePlaceholder" class="hide">hello</div>
+          
           <div id="LabelGroupsViewPlaceholder"></div>
           <a  class="mdl-navigation__link topnav createLabelgroup <% if(user==null) { %>hidden<% } %>"><i class="material-icons">add_circle</i><input type='text' id='newLabelgroup' class='labelgroup'/></a>
 

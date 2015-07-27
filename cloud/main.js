@@ -194,7 +194,7 @@ deafultLabels = {
         labels: ['vacsora','reggeli','ebéd','esküvő','hanuka','húsvét','karácsony','partyk','születésnap']
       },
       { 
-        name: 'Nemzet',
+        name: 'Nemzetek konyhái',
         weight: 3,
         labels: ['görög','indiai','izraeli','kínai','marokkói','olasz','thai','török']
       },
