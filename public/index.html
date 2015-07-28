@@ -56,6 +56,7 @@
   <!-- bootstrap -->
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="bower_components/bootstrap-social/bootstrap-social.css">
     <!-- <link rel="stylesheet" type="text/css" href="bootstrap/3.3.5/css/bootstrap.min.css"> -->
     <!-- <link rel="stylesheet" type="text/css" href="bootstrap/3.3.5/css/bootstrap-theme.min.css"> -->
     
@@ -76,6 +77,8 @@
     <!-- Fonts -->
     <link href='//fonts.googleapis.com/css?family=Roboto:regular,bold,italic,thin,light,bolditalic,black,medium&amp;lang=en' rel='stylesheet' type='text/css'>
     <link href="//fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+
 
   <!-- adds -->
     <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
@@ -211,6 +214,9 @@
 
     </div>
     <div class="mdl-card__actions mdl-card--border">
+      <a class="btnClose mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
+        <%_ Close %>
+      </a>
   <% if ( !Parse.User.current() || (Parse.User.current() && user.objectId !== Parse.User.current().id) ) {  %>
       <a class="btnClone mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
         <%_ Save_to_My_Book %>
@@ -337,9 +343,12 @@
           <a  class="mdl-navigation__link topnav createLabelgroup <% if(user==null) { %>hidden<% } %>"><i class="material-icons">add_circle</i><input type='text' id='newLabelgroup' class='labelgroup'/></a>
 
           <div class="mdl-layout-spacer"></div>
-          <a class="help" href=""><i class="mdl-color-text--light-green-900 material-icons">help_outline</i></a>
-
-          <a class="btnSignIn mdl-navigation__link <% if(user) { %>hidden<% } %>" href="#"><i class="mdl-color-text--light-green-900 material-icons">person</i><%_ Sign_In %> / <%_ Login %></a>
+          
+          <!-- <a class="help" href=""><i class="mdl-color-text--light-green-900 material-icons">help_outline</i></a> -->
+          
+          <a class="btnSignIn btn btn-block btn-social btn-facebook <% if(user) { %>hidden<% } %>">
+            <i class="fa fa-facebook"></i> Sign in with Facebook
+          </a>
           <div class='loginedUser mdl-color--teal-900 <% if(user==null) { %>hidden<% } %>'>
             <img src="<% if(user){ print(user.avatar) } else { print('images/user.jpg') } %>" class="app-avatar" />
             <span class='app-user-name'><% if(user) { print(user.name) } %> </span>

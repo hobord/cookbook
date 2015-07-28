@@ -1006,13 +1006,14 @@ var s, app = {
 	app.RecipeView = Backbone.View.extend({
 		el       : '#viewRecipePlaceholder',
 		events : {
-			'click .btnEdit'     : 'onEdit',
-			'click .btnClone'    : 'onClone',
-			'click .author'      : 'onAuthor',
-			'click .originalWriter': 'onOriginalWriter',
-			'click .close'       : 'onDiscard',
-			'click .add-favorite': 'onToggleFavorite',
-			'click .share'		 : 'onShare'
+			'click .btnEdit'        : 'onEdit',
+			'click .btnClone'       : 'onClone',
+			'click .author'         : 'onAuthor',
+			'click .originalWriter' : 'onOriginalWriter',
+			'click .close'          : 'onDiscard',
+			'click .btnClose'       : 'onDiscard',
+			'click .add-favorite'   : 'onToggleFavorite',
+			'click .share'          : 'onShare'
 		},
 
 		initialize: function() {
@@ -1681,6 +1682,7 @@ var s, app = {
 			'Legal_information'       : 'Legal information',
 			'Save_to_My_Book'         : 'Save to My Book',
 			'Read'                    : 'Read',
+			'Close'                   : 'Close',
 			'Edit'                    : 'Edit',
 			'Delete'                  : 'Delete',
 			'Save'                    : 'Save',
@@ -1722,6 +1724,7 @@ var s, app = {
 			'Delete'            : 'Törölés',
 			'Save'              : 'Mentés',
 			'Read'              : 'Olvas',
+			'Close'             : 'Bezár',
 			'Name'              : 'Név',
 			'Description'       : 'Leírás',
 			'Ingredients'       : 'Hozzávalók',
