@@ -324,7 +324,7 @@ var s, app = {
 		FB.ui({
 		  method: 'share',
 		  display : "popup",
-		  href: "http://cbook.parseapp.com/#recipe/_"+app.genUrlName(recipe.get('name'))+"-"+recipe.id,
+		  href: "http://www.justfoodyou.com/#recipe/_"+app.genUrlName(recipe.get('name'))+"-"+recipe.id,
 		  name: recipe.get('name'),
 		  title: recipe.get('name'),
 		  picture: coverImageUrl,
@@ -622,7 +622,7 @@ var s, app = {
 				labels.splice(index, 1);
 				if(!this.get('user')) {
 					var str = this.get('text');
-					str.replace(label.get('name'), "").trim();
+					str = str.replace(new RegExp(label.get('name'), 'gi'), '').trim();
 					this.set('text',str);
 					$('#search').val(str);
 					$('.app-header .mdl-textfield--expandable').removeClass('is-focused');
@@ -1001,6 +1001,7 @@ var s, app = {
 		},
 		listAllRecipes: function() {
 			app.recipesFiltermanager.set( { user: null }, { validate:true } );
+			app.recipesFiltermanager.set('labels', null);
 			app.recipesFiltermanager.set('favorites', false);
 			app.router.navigate("/", {trigger: false});
 			app.switchLayout('list');
