@@ -180,6 +180,7 @@ var s, app = {
     loadFollowedUsers: function() {
     	var relation = app.loginedUser.relation("followedUsers");
 		var query = relation.query();
+    	query.ascending('name');
 		query.find().then(function (list) {
 		    app.followedUsers = new Parse.Collection(list, {model:Parse.User});
 		    app.followedUsersView = new app.NavigationFollowedUsersView({collection:app.followedUsers});
@@ -199,6 +200,7 @@ var s, app = {
 		}
 		this.loginedUser.save().then( 
 			function() {
+				$('#FollowedPeoplePlaceholder').removeClass('hide');
 				app.loadFollowedUsers();
 			},
 			function(error) {
@@ -568,7 +570,7 @@ var s, app = {
 				else {
 					// $('.filter-user-avatar').attr('src','images/user.png');
 					$('.filter-user-avatar').attr('src','/icon_512.png');
-					$('.filter-user-name').html(app.localeDict('AllPublic'));
+					$('.filter-user-name').html(app.localeDict('AllinJustFoodYou'));
 				}
 
 				if(attrs.user==null) {
@@ -593,7 +595,7 @@ var s, app = {
 				// this.set( { labels: labels }, { validate:true } );
 				this.set( { labels: labels } );
 			}
-			this.setAllPublicAcces(false);
+			this.setAllinJustFoodYouAcces(false);
 		},
 		removeLabel: function(label) {
 			var labels = this.get('labels');
@@ -636,8 +638,7 @@ var s, app = {
 
 		},
 		search: function() {
-	    	var qRecipe = new Parse.Query(app.Recipe);
-			var currentUser = Parse.User.current();
+	    	this.qRecipe = new Parse.Query(app.Recipe);
 			var navigationParams = []; //TODO
 			
 			$('.app-navigation').find('.cmdListAllRecipes i').removeClass('mdl-color-text--light-green-400');
@@ -653,7 +654,7 @@ var s, app = {
 				$('.app-navigation').find('.cmdListFavoritedRecipes i').addClass('mdl-color-text--light-green-400');
 		    	$('.app-navigation').find('.cmdListFavoritedRecipes i').removeClass('mdl-color-text--light-green-900');
 				var relation = app.loginedUser.relation("favorites");
-				qRecipe = relation.query();
+				this.qRecipe = relation.query();
 			}
 			else {
 				// keywords
@@ -661,7 +662,7 @@ var s, app = {
 					var keywords = this.get('text').split(' ');
 			    	if ( Array.isArray(keywords) && keywords.length ) {
 			   			// keywords = _.uniq(app.genSearchMask(keywords.join(' ')));
-						// qRecipe.containsAll('searchMask', keywords);
+						// this.qRecipe.containsAll('searchMask', keywords);
 			    		var re = ""
 			    		for (var i = 0; i < keywords.length; i++) {
 			    			keywords[i] = app.genSearchMask(keywords[i]);
@@ -673,7 +674,7 @@ var s, app = {
 			    			// 	re += "|(.*"+keywords[i]+".*)"
 
 			    		};
-						qRecipe.matches("searchMaskStr", re, 'i');
+						this.qRecipe.matches("searchMaskStr", re, 'i');
 		    			navigationParams.push('k='+keywords.join(','));
 			    	}
 				}
@@ -693,15 +694,15 @@ var s, app = {
 							$('.label-'+labelId).addClass('mdl-color-text--light-green-400');
 							$('.label-'+labelId).removeClass('mdl-color-text--light-green-900');
 						};
-						qRecipe.containsAll("labelsId", ids);  // AND
-						// qRecipe.containedIn("labelsId", ids); //OR
+						this.qRecipe.containsAll("labelsId", ids);  // AND
+						// this.qRecipe.containedIn("labelsId", ids); //OR
 
 						navigationParams.push('l='+ids.join(','));
 					}
 
 					// user
-					qRecipe.equalTo('user', this.get('user'));
-					if (currentUser && currentUser.id == this.get('user').id) {
+					this.qRecipe.equalTo('user', this.get('user'));
+					if (app.loginedUser && app.loginedUser.id == this.get('user').id) {
 						$('.app-navigation').find('.cmdListMyRecipes i').addClass('mdl-color-text--light-green-400');
 				    	$('.app-navigation').find('.cmdListMyRecipes i').removeClass('mdl-color-text--light-green-900');
 				    	$('.createLabelgroup').removeClass('hidden');
@@ -718,16 +719,9 @@ var s, app = {
 				}
 			}
 
-			
-			// limit
-	    	var limit = (this.get('limit'))?this.get('limit'):21;
-			qRecipe.limit(limit);
-			var skip = (this.get('skip'))?this.get('skip'):0;
-			qRecipe.skip(skip);
-
 			// order by
 			if ( this.get('orderBy') ) {
-				qRecipe.descending(this.get('orderBy')); 
+				this.qRecipe.descending(this.get('orderBy')); 
 			}
 
 			var navigationUrl = navigationParams.join('&');
@@ -736,14 +730,23 @@ var s, app = {
 			}
 
 			// include
-			qRecipe.include('labels');
-			qRecipe.include('user');
-			qRecipe.include('originalWriter');
-			qRecipe.include('originalWriter');
+			this.qRecipe.include('labels');
+			this.qRecipe.include('user');
+			this.qRecipe.include('originalWriter');
+			this.qRecipe.include('originalWriter');
+
+			this.qRecipe.count().then(function(count){
+				app.recipesFiltermanager.set('foundCount',count);
+			});
+			// limit
+	    	var limit = (this.get('limit'))?this.get('limit'):21;
+			this.qRecipe.limit(limit);
+			var skip = (this.get('skip'))?this.get('skip'):0;
+			this.qRecipe.skip(skip);
  
 			// do it
 			app.spinnerStart();
-			qRecipe.find().then(function (list) {
+			this.qRecipe.find().then(function (list) {
 				$('main').scrollTop(0);
 			    // use list
 			    app.listedRecipes = new Parse.Collection(list, {model:app.Recipe});
@@ -1020,6 +1023,17 @@ var s, app = {
 			return false;
 		}
 
+	});
+
+	app.RecipesFiltermanagerView = Backbone.View.extend({
+		initialize: function() {
+			// this.template = _.template(underi18n.template(app.templates.viewRecipe, app.localeDict));
+			this.listenTo(this.model, 'change', this.render);
+		    // this.render();
+		},
+		render: function() {
+			return this;
+		}
 	});
 
 	app.RecipeView = Backbone.View.extend({
@@ -1683,9 +1697,7 @@ var s, app = {
 		}
 	})
 
-	app.RecipesFiltermanagerView = Backbone.View.extend({
 
-	});
 
 // Translation DICT ========================================================================================================
 	app.localeDicts = {
@@ -1724,9 +1736,11 @@ var s, app = {
 			'editRecipeCookTime'      : ', cook time: ',
 			'editRecipeMakeTime'      : ', sum make time: ',
 			'makeTime'				  : 'Make time (minute):',
-			'AllPublic'				  : 'All shared',
+			'AllinJustFoodYou'				  : 'All in Just Food You',
 			'FavoritedPeople'		  : 'Friends',
-			'originalWriter'		  : 'Original writer'
+			'originalWriter'		  : 'Original writer',
+			'CreateLabelGroup'		  : 'Create label group',
+			'CreateLabel'		  : 'Create label'
 		},
 		'hu' : {
 			'All'				: 'Összes',
@@ -1763,9 +1777,11 @@ var s, app = {
 			'editRecipeCookTime'      : ', elkészítés ideje:',
 			'editRecipeMakeTime'      : ', összesen:',
 			'makeTime'				  : 'Elkészítése (perc):',
-			'AllPublic'				  : 'Összes megosztott',
+			'AllinJustFoodYou'				  : 'All in Just Food You',
 			'FavoritedPeople'		  : 'Barátok',
-			'originalWriter'		  : 'Eredetileg lejegyezte'
+			'originalWriter'		  : 'Eredetileg lejegyezte',
+			'CreateLabelGroup'		  : 'Cimkecsoport létrehozása',
+			'CreateLabel'    		  : 'Cimke létrehozása',
 		} 
 
 	};

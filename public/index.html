@@ -126,13 +126,13 @@
 </div>
 </script>
 <script type="text/template" id="followedUserItem-tmpl">
-<i class="mdl-color-text--light-green-900 material-icons">person</i><span><%= user.name %></span>
+<img src="<%= user.avatar %>" class="user-avatar2"><span><%= user.name %></span>
 </script>
 
 
 <script type="text/template" id="navigationLabelGroup-tmpl">
   <label class="groupName labelgroup-<%= id %>"><i class="material-icons">chevron_right</i><%= labelgroup.name %><% if (owner){ %><i class="material-icons delete-group">delete</i><% } %></label>
-  <% if (owner){ %><input type='text' class='newLabel hidden'/><% } %>
+  <% if (owner){ %><input type='text' class='newLabel hidden' placeholder="<%_ CreateLabel %>" /><% } %>
   <div class="labels hidden"></div>
 </script>
 
@@ -340,7 +340,7 @@
           <div id="FollowedPeoplePlaceholder" class="hide"></div>
           
           <div id="LabelGroupsViewPlaceholder"></div>
-          <a  class="mdl-navigation__link topnav createLabelgroup <% if(user==null) { %>hidden<% } %>"><i class="material-icons">add_circle</i><input type='text' id='newLabelgroup' class='labelgroup'/></a>
+          <a  class="mdl-navigation__link topnav createLabelgroup <% if(user==null) { %>hidden<% } %>"><i class="material-icons">add_circle</i><input type='text' id='newLabelgroup' class='labelgroup' placeholder="<%_ CreateLabelGroup %>"/></a>
 
           <div class="mdl-layout-spacer"></div>
           
