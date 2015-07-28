@@ -26,6 +26,7 @@ html, body {
 }
 .app-drawer-header {
 	padding: 16px;
+  cursor: pointer;
 }
 .app-drawer-header img {
 	margin-right: 16px;

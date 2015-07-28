@@ -268,7 +268,7 @@ var s, app = {
 											fuser.save().then(function(fuser){
 												app.loginedUser.set('avatar', fuser.get('picture'));
 												app.loginedUser.set('name',   fuser.get('name'));
-												app.loginedUser.set("locale", fuser.get('locale'));
+												// app.loginedUser.set("locale", fuser.get('locale'));
 												app.loginedUser.save().then(function(){
 													location.reload();
 												});	
@@ -287,6 +287,7 @@ var s, app = {
 											app.loginedUser.set('avatar', fuser.get('picture'));
 											app.loginedUser.set('name',   fuser.get('name'));
 											app.loginedUser.set("locale", fuser.get('locale'));
+											app.loginedUser.set("profileLink", fuser.get('link'));
 											app.loginedUser.save().then(function(){
 												location.reload();
 											});	
@@ -400,6 +401,7 @@ var s, app = {
 		    case 'view':
 			    $('#viewRecipe').show();
 			    $('#btnCreateRecipe').show();
+			    $('main').scrollTop(0);
 			    $('.mdl-layout-title').html(app.recipeView.model.get('name'));
 
 				if (app.favoritedRecipes && app.favoritedRecipes.get(app.recipeView.model.id)) {
@@ -608,15 +610,21 @@ var s, app = {
 			if (index == -1) {
 				labels.push(label);
 				this.set('allPublicAcces', false);
-				app.recipesFiltermanager.set('text',label.get('name'));
-				$('#search').val(label.get('name'));
-				$('.app-header .mdl-textfield--expandable').addClass('is-focused');
+				if(!this.get('user')) {
+					this.set('text',(this.get('text')+' '+label.get('name')).trim());
+					$('#search').val(this.get('text'));
+					$('.app-header .mdl-textfield--expandable').addClass('is-focused');
+				}
 			}
 			else {
 				labels.splice(index, 1);
-				app.recipesFiltermanager.set('text','');
-				$('#search').val('');
-				$('.app-header .mdl-textfield--expandable').removeClass('is-focused');
+				if(!this.get('user')) {
+					var str = this.get('text');
+					str.replace(label.get('name'), "").trim();
+					this.set('text',str);
+					$('#search').val(str);
+					$('.app-header .mdl-textfield--expandable').removeClass('is-focused');
+				}
 			}
 			// this.set( { labels: labels }, { validate:true } );
 			this.set( { labels: labels } );
@@ -714,6 +722,8 @@ var s, app = {
 			// limit
 	    	var limit = (this.get('limit'))?this.get('limit'):21;
 			qRecipe.limit(limit);
+			var skip = (this.get('skip'))?this.get('skip'):0;
+			qRecipe.skip(skip);
 
 			// order by
 			if ( this.get('orderBy') ) {
@@ -734,6 +744,7 @@ var s, app = {
 			// do it
 			app.spinnerStart();
 			qRecipe.find().then(function (list) {
+				$('main').scrollTop(0);
 			    // use list
 			    app.listedRecipes = new Parse.Collection(list, {model:app.Recipe});
 			    app.renderRecipeList(app.listedRecipes);
@@ -854,7 +865,8 @@ var s, app = {
 			'click .onContact'				 : 'onContact',
 			'click .onPrivacy'				 : 'onPrivacy',
 			'click .onAbout'				 : 'onAbout',
-			'click header .add-favorite'	 : 'onAddFavorite'
+			'click header .add-favorite'	 : 'onAddFavorite',
+			'click .app-drawer-header'		 : 'onGoProfile'
 		},
 		initialize: function() {
 			this.template = _.template(underi18n.template(app.templates.application, app.localeDict));
@@ -893,6 +905,13 @@ var s, app = {
 		logout: function(e) {
 			Parse.User.logOut();
 			location.reload();
+		},
+		onGoProfile: function(event) {
+			if(app.recipesFiltermanager.get('user')) {
+				if (app.recipesFiltermanager.get('user').get('profileLink')) {
+					window.open(app.recipesFiltermanager.get('user').get('profileLink'));
+				}
+			}
 		},
 		onAddFavorite: function(event) {
 			if (app.loginedUser) {
