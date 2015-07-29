@@ -12,6 +12,7 @@
   left: 0;  
   right: 0;  
   margin: auto;  
+  border: 1px solid #ddd;
 }
 html, body {
   font-family: 'Roboto', 'Helvetica', sans-serif;
@@ -349,11 +350,11 @@ div.mdl-navigation{
 	cursor:pointer;	
 }
 
-.recipe-card-content .name {
+.recipeListItem .name {
 	cursor:pointer;	
 }
 
-.recipe-card-content .image {
+.recipeListItem .image {
 	cursor:pointer;	
 	/*max-height: 350px;*/
 }
@@ -395,6 +396,7 @@ div.originalWriter img {
     width: 100%;
     height: 100%;
     text-align: right;
+    cursor: pointer;
 }
 #image_upload {
 	display: none;
@@ -454,7 +456,7 @@ div.originalWriter img {
 	border: none;
 }
 #viewRecipe .image {
-	border: 1px solid black;
+	border: 1px solid #ddd;
 	max-height: 500px;
 }
 #viewRecipe .makeTime {
