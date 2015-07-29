@@ -13,6 +13,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="green">
     <meta name="apple-mobile-web-app-title" content="Just Food You">
+    <meta name="google-site-verification" content="_powGVmEBeiNx-iU_OwPkKMmlYjiRRhavQtlF1tyb-8" />
     <link rel="apple-touch-icon" href="/icon_512.png" />
 
     <link rel="shortcut icon" sizes="32x32" type="image/png" href="/icon_32.png" />
@@ -152,7 +153,7 @@
       <img src="<% if (recipe.coverImageUrl) { print(recipe.coverImageUrl) } else { print('https://s3.amazonaws.com/cookbookimg/NoImage.jpg') } %>" alt="<%= recipe.name %>" title="<%= recipe.name %>" class="image" itemprop="image">
     </div>
     <% if (recipe.makeTime) { %><div class="makeTime"><%_ makeTime %><%= recipe.makeTime %></div><% } %>
-    <div class="mdl-card__supporting-text recipe-short-desc">
+    <div class="mdl-card__supporting-text recipe-short-desc" itemprop="about">
       <%= recipe.description %>
     </div>
     <div class="labels mdl-card--border">
@@ -198,17 +199,17 @@
     </div>
     <% if (recipe.makeTime) { %><div class="makeTime" itemprop="totalTime"><%_ makeTime %><%= recipe.makeTime %></div><% } %>
     <div id="labels"></div>
-    <div class="mdl-card__supporting-text recipe-short-desc">
+    <div class="mdl-card__supporting-text recipe-short-desc" itemprop="about">
       <%= recipe.description %>
     </div>
-    <div class="mdl-card__supporting-text recipe-short-desc">
+    <div class="mdl-card__supporting-text recipe-short-desc" itemprop="recipeIngredient">
       <%= recipe.ingredients %>
     </div>
     <div class="mdl-card__supporting-text recipe-short-desc" itemprop="recipeInstructions">
       <%= recipe.directions %>
     </div>
     <% if(owriter) { %>
-        <div class="originalWriter"><%_ originalWriter %>:<img src="<%= owriter.avatar %>" alt="<%= owriter.name %>" title="<%= owriter.name %>" class="originalWriter img-circle app-avatar-small"><%= owriter.name %></div>
+        <div class="originalWriter" itemprop="author"><%_ originalWriter %>:<img src="<%= owriter.avatar %>" alt="<%= owriter.name %>" title="<%= owriter.name %>" class="originalWriter img-circle app-avatar-small"><%= owriter.name %></div>
     <% } %>
 
     <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-8159881314741914" data-ad-slot="9788966330" data-ad-format="auto"></ins>

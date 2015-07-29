@@ -244,7 +244,7 @@ var s, app = {
     	FB.getLoginStatus(function(response) {
 		  	if (response && !response.error && response.status === 'connected') {
 		    	console.log('Logged in.');
-		    	FB.api('/me', {fields: 'id,name,last_name,first_name,gender,picture,link,timezone,updated_time,verified,locale'}, function(response) {
+		    	FB.api('/me', {fields: 'id,name,email,last_name,first_name,gender,picture,link,timezone,updated_time,verified,locale'}, function(response) {
 		    		if (response && !response.error) {
 					  	// console.log('Your name is ' + response.name);
 					  	// console.log(response);
@@ -270,6 +270,7 @@ var s, app = {
 											fuser.save().then(function(fuser){
 												app.loginedUser.set('avatar', fuser.get('picture'));
 												app.loginedUser.set('name',   fuser.get('name'));
+												app.loginedUser.set('email',   fuser.get('email'));
 												// app.loginedUser.set("locale", fuser.get('locale'));
 												app.loginedUser.save().then(function(){
 													location.reload();
@@ -289,6 +290,7 @@ var s, app = {
 											app.loginedUser.set('avatar', fuser.get('picture'));
 											app.loginedUser.set('name',   fuser.get('name'));
 											app.loginedUser.set("locale", fuser.get('locale'));
+											app.loginedUser.set('email',   fuser.get('email'));
 											app.loginedUser.set("profileLink", fuser.get('link'));
 											app.loginedUser.save().then(function(){
 												location.reload();

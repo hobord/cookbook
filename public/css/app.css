@@ -325,7 +325,6 @@ div.mdl-navigation{
     padding: 0px;
     line-height: 27px;
     margin: 0px;
-    cursor:pointer;	
     height: 28px;
     overflow: hidden;
 }
@@ -350,7 +349,7 @@ div.mdl-navigation{
 	cursor:pointer;	
 }
 
-.recipeListItem .name {
+.recipeListItem .recipeName {
 	cursor:pointer;	
 }
 
