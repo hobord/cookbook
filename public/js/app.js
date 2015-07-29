@@ -347,9 +347,11 @@ var s, app = {
     		case 'user':
 		    	$('#recipeResultsList').show();
 		    	$('#btnCreateRecipe').show();
+		    	window.document.title='Just Food You'; 
 		    	var filteredUser = app.recipesFiltermanager.get('user');
 		    	if (filteredUser) {
 			    	$('.mdl-layout-title').html(filteredUser.get('name') + app.localeDict('s_recipes'));
+			    	window.document.title='Just Food You - '+filteredUser.get('name') + app.localeDict('s_recipes');
 
 					if (app.followedUsers && app.followedUsers.get(filteredUser.id)) {
 						$('header .add-favorite i').text('favorite');
@@ -373,12 +375,14 @@ var s, app = {
 		    	break;
 	    	case 'list':
 	    		app.router.navigate( "/", { trigger: false } );
+	    		window.document.title='Just Food You';
 		    	$('#recipeResultsList').show();
 		    	$('#btnCreateRecipe').show();
 
 		    	var filteredUser = app.recipesFiltermanager.get('user');
 		    	if (filteredUser) {
 			    	$('.mdl-layout-title').html(filteredUser.get('name') + app.localeDict('s_recipes'));
+			    	window.document.title='Just Food You - '+filteredUser.get('name') + app.localeDict('s_recipes');
 
 					if (app.followedUsers && app.followedUsers.get(filteredUser.id)) {
 						$('header .add-favorite i').text('favorite');
@@ -522,6 +526,7 @@ var s, app = {
     },
     viewRecipe: function(recipe) {
     	app.router.navigate( "/recipe/_"+app.genUrlName(recipe.get('name'))+"-"+recipe.id, { trigger: false } );
+    	window.document.title='Just Food You - '+recipe.get('name');
     	this.recipeView = new app.RecipeView({model: recipe});
     	app.switchLayout('view');
     },
@@ -537,6 +542,18 @@ var s, app = {
 	renderRecipeList: function(recipeList) {
 		this.recipeListView = new app.RecipeListView({collection: recipeList});
 		this.recipeListView.render();
+	},
+	print: function(recipe) {
+		window.open('/print/#recipe/_'+app.genUrlName(recipe.get('name'))+'-'+recipe.id);
+
+	},
+	sendToKindle: function() {
+        window.readabilityToken = '';
+        var s = document.createElement('script');
+        s.setAttribute('type', 'text/javascript');
+        s.setAttribute('charset', 'UTF-8');
+        s.setAttribute('src', '//www.readability.com/bookmarklet/send-to-kindle.js');
+        document.documentElement.appendChild(s);
 	}
 }
 
@@ -1047,6 +1064,8 @@ var s, app = {
 			'click .close'          : 'onDiscard',
 			'click .btnClose'       : 'onDiscard',
 			'click .add-favorite'   : 'onToggleFavorite',
+			'click .print'   		: 'onPrint',
+			'click .kindle'   		: 'onKindle',
 			'click .share'          : 'onShare'
 		},
 
@@ -1084,6 +1103,12 @@ var s, app = {
 			FB.XFBML.parse(this.el);
 			(adsbygoogle = window.adsbygoogle || []).push({});
 			return this;
+		},
+		onPrint: function() {
+			app.print(this.model);
+		},
+		onKindle: function() {
+			app.sendToKindle();
 		},
 		onAuthor: function() {
 			// body...
@@ -1429,6 +1454,7 @@ var s, app = {
 			'click .recipeName'   : 'onRead',
 			'click .image'        : 'onRead',
 			'click .add-favorite' : 'onToggleFavorite',
+			'click .print' : 'onPrint',
 			'click .share'  	  : 'onShare'
 		},
 		initialize: function() {
@@ -1451,6 +1477,9 @@ var s, app = {
 				}
 			};
 			return this;
+		},
+		onPrint: function() {
+			app.print(this.model);
 		},
 		onRead: function(e) {
 			app.viewRecipe(this.model);

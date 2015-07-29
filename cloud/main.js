@@ -13,6 +13,21 @@ var imageExts = {
   "image/jpeg":"jpg"
 }
 
+// var express = require('express'); 
+// var app = express();
+// app.set('views', 'cloud/views');
+// app.set('view engine', 'ejs');
+// app.post('/facebook_page', function(req, res) {
+
+//   res.render('index.ejs', {});
+
+// });
+// app.get('/facebook_page', function(req, res) {
+
+//   res.render('index.ejs', {});
+
+// });
+// app.listen();
 
 Parse.Cloud.define("hello", function(request, response) {
   response.success("Hello world!");

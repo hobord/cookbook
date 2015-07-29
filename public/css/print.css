@@ -1,0 +1,22 @@
+
+.card_title {
+	margin: 20px 0px 0px 40px;
+}
+h2.author{ 
+    margin: 0px;
+    padding: 0px;
+    font-size: 40px;
+}
+.img-circle {
+    margin-right: 20px;
+}
+h2.recipeName{
+  
+}
+.recipe-short-desc,
+.recipe-short-desc,
+.recipe-short-desc ,
+.originalWriter {
+    margin: 40px;
+	font-size: 16px;
+}
