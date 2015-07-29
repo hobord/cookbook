@@ -1,3 +1,18 @@
+.recipeListItem .thumbnail {  
+  height: 350px;
+  position: relative;
+  overflow: hidden;
+}
+.recipeListItem .thumbnail > img {
+  position: absolute;
+  width:100%;
+  display: block;
+  top: 0;  
+  bottom: 0;  
+  left: 0;  
+  right: 0;  
+  margin: auto;  
+}
 html, body {
   font-family: 'Roboto', 'Helvetica', sans-serif;
 }
@@ -310,6 +325,8 @@ div.mdl-navigation{
     line-height: 27px;
     margin: 0px;
     cursor:pointer;	
+    height: 28px;
+    overflow: hidden;
 }
 .recipe-card .makeTime {
 	color: rgba(0,0,0,.87);
@@ -325,7 +342,7 @@ div.mdl-navigation{
 }
 .recipeListItem .recipe-short-desc {
 	padding-top:0px;
-	height: 75px;
+	height: 70px;
 	overflow: hidden;
 }
 .recipe-card-content .app-avatar-small {
@@ -338,7 +355,7 @@ div.mdl-navigation{
 
 .recipe-card-content .image {
 	cursor:pointer;	
-	max-height: 350px;
+	/*max-height: 350px;*/
 }
 div.originalWriter {
   cursor:pointer; 
@@ -351,6 +368,7 @@ div.originalWriter img {
 /*----------------------------------------------------------------------------*/
 .recipeListItem .labels {
 	overflow: hidden;
+  height: 25px;
 }
 .recipeListItem .label {
 	margin-top: 15px;
@@ -366,6 +384,7 @@ div.originalWriter img {
 #editRecipe .thumbnail {
 	padding: 15px;
 }
+
 #editRecipe .image-container {
 	position: relative;
 }
