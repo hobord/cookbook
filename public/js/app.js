@@ -7,7 +7,8 @@ var s, app = {
     	facebookAppId: "890469204379378", // Production
     	// facebookAppId: "905249916234640", //Test
     	AWSAccessKeyId: "AKIAJ5EPMLPXAQVXTNPQ",
-    	amazonBucket: "cookbookimg"
+    	amazonBucket: "cookbookimg",
+    	analytics: 'UA-5658990-11'
     },
     templates: {
     	'application'          : '#application-tmpl',
@@ -66,6 +67,7 @@ var s, app = {
 		//start
 		if (Parse.User.current()) {
     		app.loginedUser = Parse.User.current();
+    		var userID = app.loginedUser.id;
 
     		var query = new Parse.Query(Parse.User);
 			query.get(app.loginedUser.id).then(function (user) {
@@ -88,10 +90,13 @@ var s, app = {
     	}
     	else {
     		// Anonymous user;
+    		var userID = 'auto'
 	    	app.applicationView.render();
 	    	app.router = new app.AppRouter();
 			Backbone.history.start();
     	}
+    	ga('create', s.analytics, userID);
+	    ga('send', 'pageview');
     },
     setAppLocale: function(localeCode) {
     	if(!localeCode) {
@@ -120,7 +125,12 @@ var s, app = {
     			location.reload();
     		});
     	}
-
+      	if (ga) { ga('send', {
+			'hitType'       : 'event',        // Required.
+			'eventCategory' : 'user',         // Required.
+			'eventAction'   : 'chanegLocale', // Required.
+			'eventLabel'   : localeCode
+		});}
     },
     loadTemplates: function() {
     	_.each(this.templates, function(item, key){
@@ -194,9 +204,19 @@ var s, app = {
 		var followed = app.followedUsers.get(user.id);
 		if (followed) {
 			relation.remove(user);
+			if (ga) { ga('send', {
+				'hitType'       : 'event',        // Required.
+				'eventCategory' : 'user',         // Required.
+				'eventAction'   : 'unfollow', // Required.
+			});}
 		}
 		else {
 			relation.add(user);
+	      	if (ga) { ga('send', {
+				'hitType'       : 'event',        // Required.
+				'eventCategory' : 'user',         // Required.
+				'eventAction'   : 'follow', // Required.
+			});}
 		}
 		this.loginedUser.save().then( 
 			function() {
@@ -213,9 +233,19 @@ var s, app = {
 		var favoritesRelation = app.loginedUser.relation('favorites');
 		if (favorited) {
 			favoritesRelation.remove(recipe);
+			if (ga) { ga('send', {
+				'hitType'       : 'event',        // Required.
+				'eventCategory' : 'recipe',         // Required.
+				'eventAction'   : 'unfavorite', // Required.
+			});}
 		}
 		else {
 			favoritesRelation.add(recipe);
+			if (ga) { ga('send', {
+				'hitType'       : 'event',        // Required.
+				'eventCategory' : 'recipe',         // Required.
+				'eventAction'   : 'favorite', // Required.
+			});}
 		}
 		app.loginedUser.save().then( 
 			function() {
@@ -236,6 +266,11 @@ var s, app = {
 	    	});
 	    	label.save();
 	    	this.loadLabels();
+	    	if (ga) { ga('send', {
+				'hitType'       : 'event',        // Required.
+				'eventCategory' : 'label',         // Required.
+				'eventAction'   : 'create', // Required.
+			});}
        	}
     	return label;
     },
@@ -332,6 +367,16 @@ var s, app = {
 		  picture: coverImageUrl,
 		  description: text
 		});
+		if (ga) {
+			ga('send', {
+			  'hitType': 'social',
+			  'socialNetwork': 'facebook',
+			  'socialAction': 'share',
+			  'socialTarget': 'http://www.justfoodyou.com',
+			  'page': "/#recipe/_"+app.genUrlName(recipe.get('name'))+"-"+recipe.id
+			});
+		}
+
     },
     switchLayout: function(layout) {
     	this.currentLayout = layout;
@@ -431,9 +476,9 @@ var s, app = {
 		    	$("main").scrollTop();
 		    	$('#editRecipe').show();
 		    	$('.mdl-layout-title').html(app.editRecipeView.model.get('name'));
-		    	if (ga) {
+		    	if (ga && app.editRecipeView.model.id) {
 				    ga('set', {
-					  page: '/#editRecipe/_'+app.genUrlName(app.recipeView.model.get('name'))+'-'+app.editRecipeView.model.id,
+					  page: '/#editRecipe/_'+app.genUrlName(app.editRecipeView.model.get('name'))+'-'+app.editRecipeView.model.id,
 					  title: app.editRecipeView.model.get('name')
 					});
 					ga('send', 'pageview');
@@ -469,6 +514,11 @@ var s, app = {
         		}
         	}
         });
+        if (ga) { ga('send', {
+			'hitType'       : 'event',        // Required.
+			'eventCategory' : 'label',         // Required.
+			'eventAction'   : 'createLabelgroup', // Required.
+		});}
     },
     createNewLabel: function(newLabelName, group) {
 		var newLabel = new app.Label();
@@ -490,6 +540,11 @@ var s, app = {
 		        app.loadLabels(app.loginedUser);
         	}
         });
+        if (ga) { ga('send', {
+			'hitType'       : 'event',        // Required.
+			'eventCategory' : 'label',         // Required.
+			'eventAction'   : 'createLabel', // Required.
+		});}
     },
     createNewRecipe: function() {
     	var currentUser = Parse.User.current();
@@ -505,6 +560,11 @@ var s, app = {
     	});
 
     	app.editRecipe(newRecipe);
+    	if (ga) { ga('send', {
+			'hitType'       : 'event',        // Required.
+			'eventCategory' : 'recipe',         // Required.
+			'eventAction'   : 'create', // Required.
+		});}
     },
     cloneRecipe: function(orig) {
     	var currentUser = Parse.User.current();
@@ -520,11 +580,21 @@ var s, app = {
 			labels        : new Array(),
 			private       : false
     	});
+    	if (ga) { ga('send', {
+			'hitType'       : 'event',        // Required.
+			'eventCategory' : 'recipe',         // Required.
+			'eventAction'   : 'clone', // Required.
+		});}
     	return newRecipe;
     },
     editRecipe: function(recipe) { 
     	this.editRecipeView = new app.EditRecipeView({model: recipe});
     	app.switchLayout('edit');
+    	if (ga) { ga('send', {
+			'hitType'       : 'event',        // Required.
+			'eventCategory' : 'recipe',         // Required.
+			'eventAction'   : 'edit', // Required.
+		});}
     },
     viewRecipe: function(recipe) {
     	app.router.navigate( "/recipe/_"+app.genUrlName(recipe.get('name'))+"-"+recipe.id, { trigger: false } );
@@ -547,7 +617,6 @@ var s, app = {
 	},
 	print: function(recipe) {
 		window.open('/print/#recipe/_'+app.genUrlName(recipe.get('name'))+'-'+recipe.id);
-
 	},
 	sendToKindle: function() {
         window.readabilityToken = '';
@@ -556,6 +625,11 @@ var s, app = {
         s.setAttribute('charset', 'UTF-8');
         s.setAttribute('src', '//www.readability.com/bookmarklet/send-to-kindle.js');
         document.documentElement.appendChild(s);
+        if (ga) { ga('send', {
+			'hitType'       : 'event',        // Required.
+			'eventCategory' : 'recipe',         // Required.
+			'eventAction'   : 'kindle', // Required.
+		});}
 	}
 }
 
@@ -658,6 +732,7 @@ var s, app = {
 		},
 		search: function() {
 	    	this.qRecipe = new Parse.Query(app.Recipe);
+	    	var gaKeywords = "";
 			var navigationParams = []; //TODO
 			
 			$('.app-navigation').find('.cmdListAllRecipes i').removeClass('mdl-color-text--light-green-400');
@@ -674,6 +749,7 @@ var s, app = {
 		    	$('.app-navigation').find('.cmdListFavoritedRecipes i').removeClass('mdl-color-text--light-green-900');
 				var relation = app.loginedUser.relation("favorites");
 				this.qRecipe = relation.query();
+				if (ga) { ga('send', 'pageview', '/favorites') }
 			}
 			else {
 				// keywords
@@ -682,6 +758,7 @@ var s, app = {
 			    	if ( Array.isArray(keywords) && keywords.length ) {
 			   			// keywords = _.uniq(app.genSearchMask(keywords.join(' ')));
 						// this.qRecipe.containsAll('searchMask', keywords);
+						gaKeywords += keywords.join('+');
 			    		var re = ""
 			    		for (var i = 0; i < keywords.length; i++) {
 			    			keywords[i] = app.genSearchMask(keywords[i]);
@@ -699,7 +776,7 @@ var s, app = {
 				}
 
 				if( this.get('user') != null ) {
-					
+					gaKeywords += '+user'+this.get('user').id;
 					// labels
 			    	var labels = this.get('labels');
 			    	$('.app-navigation').find('.label').removeClass('mdl-color-text--light-green-400');
@@ -709,7 +786,7 @@ var s, app = {
 						for (var i = 0; i < labels.length; i++) {
 							var labelId = (labels[i].id)?labels[i].id:labels[i];
 							ids.push( labelId );
-
+							gaKeywords += "+label:"+label[i].get('name');
 							$('.label-'+labelId).addClass('mdl-color-text--light-green-400');
 							$('.label-'+labelId).removeClass('mdl-color-text--light-green-900');
 						};
@@ -737,6 +814,7 @@ var s, app = {
 			    	$('.app-navigation').find('.cmdListAllRecipes i').removeClass('mdl-color-text--light-green-900');					
 				}
 			}
+			if (ga) { ga('send', 'pageview', '/search?q='+gaKeywords); }
 
 			// order by
 			if ( this.get('orderBy') ) {
@@ -914,8 +992,21 @@ var s, app = {
 				success: function(user) {
 				    if (!user.existed()) {
 				      // alert("User signed up and logged in through Facebook!");
-				    } else {
+				      	if (ga) { ga('send', {
+							'hitType'       : 'event',        // Required.
+							'eventCategory' : 'user',         // Required.
+							'eventAction'   : 'register',     // Required.
+							'event}Label'    : 'registration by facebook'
+						});}
+				    } 
+				    else {
 				        // alert("User logged in through Facebook!");
+				      	if (ga) { ga('send', {
+							'hitType'       : 'event',        // Required.
+							'eventCategory' : 'user',         // Required.
+							'eventAction'   : 'login',        // Required.
+							'event}Label'    : 'login by facebook'
+						});}
 				    }
 				    app.setFacebookUser();
 				},
@@ -1394,6 +1485,11 @@ var s, app = {
 								if (app.recipeListView) {
 									app.recipeListView.trigger('change');
 								}
+								if (ga) { ga('send', {
+									'hitType'       : 'event',        // Required.
+									'eventCategory' : 'recipe',         // Required.
+									'eventAction'   : 'uploadImage', // Required.
+								});}
 						    }, false);
 						    // xhr.addEventListener("error", uploadFailed, false);
 						    // xhr.addEventListener("abort", uploadCanceled, false);
@@ -1420,6 +1516,11 @@ var s, app = {
 						app.recipeListView.trigger('change');
 					}
 				}
+				if (ga) { ga('send', {
+					'hitType'       : 'event',        // Required.
+					'eventCategory' : 'recipe',         // Required.
+					'eventAction'   : 'save', // Required.
+				});}
 			})
 
 			// this.remove();
@@ -1438,11 +1539,18 @@ var s, app = {
 		},
 		onDelete: function(e) {
 			this.model.destroy({
-				success: function() {
+				success: function(result) {
 					app.recipesFiltermanager.search();
 					app.switchLayout('list');
+					$('main').scrollTop(0);
+					console.log('deleted:'+result);
 				}
 			});
+			if (ga) { ga('send', {
+				'hitType'       : 'event',        // Required.
+				'eventCategory' : 'recipe',         // Required.
+				'eventAction'   : 'delete', // Required.
+			});}
 		}
 	})
 
@@ -1582,6 +1690,11 @@ var s, app = {
 					app.loadLabels(app.loginedUser);
 				}
 			});
+			if (ga) { ga('send', {
+				'hitType'       : 'event',        // Required.
+				'eventCategory' : 'label',         // Required.
+				'eventAction'   : 'delete', // Required.
+			});}
 		}
 	});
 
@@ -1701,6 +1814,11 @@ var s, app = {
 					app.loadLabels(app.loginedUser);
 				}
 			});
+			if (ga) { ga('send', {
+				'hitType'       : 'event',        // Required.
+				'eventCategory' : 'label',         // Required.
+				'eventAction'   : 'deleteGroup', // Required.
+			});}
 		},
 		onCreateLabel: function(event) {
 			if(event.keyCode == 13) {
@@ -1786,7 +1904,7 @@ var s, app = {
 			'Legal_information' : 'Szerződési információk',
 			'Save_to_My_Book'   : 'Mentsd el nekem!',
 			'Edit'              : 'Szerkeszt',
-			'Delete'            : 'Törölés',
+			'Delete'            : 'Törlés',
 			'Save'              : 'Mentés',
 			'Read'              : 'Olvas',
 			'Close'             : 'Bezár',
@@ -1805,7 +1923,7 @@ var s, app = {
 			'placeholder_recipe_desc' : 'Rövid imsertető',
 			'placeholder_recipe_ingr' : 'Hozzávalók',
 			'placeholder_recipe_dir' : 'Elkészítése',
-			'editRecipePrepTime'      : 'Előkészölés ideje (perc):',
+			'editRecipePrepTime'      : 'Elkészítéselőkészítés ideje (perc):',
 			'editRecipeCookTime'      : ', elkészítés ideje:',
 			'editRecipeMakeTime'      : ', összesen:',
 			'makeTime'				  : 'Elkészítése (perc):',

@@ -90,9 +90,6 @@
     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
-    ga('create', 'UA-5658990-11', 'auto');
-    ga('send', 'pageview');
-
     </script>
   <!-- App -->
     <link rel="stylesheet" type="text/css" href="css/app.css">
@@ -176,9 +173,10 @@
         <i class="material-icons">share</i>
       </button>
       <% } %>
-      <a class="print pull-right mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect mdl-button--colored ">
+      <!-- <a class="print pull-right mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect mdl-button--colored ">
         <i class="material-icons">local_printshop</i>
-      </a>
+      </a> -->
+      <div class="pull-right fb-like" data-href="http://www.justfoodyou.com/#recipe/r-<%= id %>" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
     </div>
     <div class="mdl-card__menu">
     </div>
@@ -243,6 +241,7 @@
       <a class="kindle pull-right mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored ">
         <image src="/images/kindle.png" />
       </a>
+      <div class="pull-right fb-like" data-href="http://www.justfoodyou.com/#recipe/r-<%= id %>" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
     </div>
     <div class="mdl-card__menu">
       <a class="close pull-right mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect ">
