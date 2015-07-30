@@ -396,45 +396,21 @@ var s, app = {
     	buttons.forEach(function(element, index, array){ 
     		$('#'+element).hide();
     	})
-    	
+    	if (this.editRecipeView && layout!='edit') {
+    		this.editRecipeView.close();
+    	}
+    	if (this.recipeView && layout!='view') {
+    		this.recipeView.close();
+    	}
+
     	switch(layout) {
-    		case 'user':
-		    	$('#recipeResultsList').show();
-		    	$('#btnCreateRecipe').show();
-		    	window.document.title='Just Food You'; 
-		    	var filteredUser = app.recipesFiltermanager.get('user');
-		    	if (filteredUser) {
-			    	$('.mdl-layout-title').html(filteredUser.get('name') + app.localeDict('s_recipes'));
-			    	window.document.title='Just Food You - '+filteredUser.get('name') + app.localeDict('s_recipes');
-
-					if (app.followedUsers && app.followedUsers.get(filteredUser.id)) {
-						$('header .add-favorite i').text('favorite');
-					}
-					else {
-						$('header .add-favorite i').text('favorite_border');
-					}
-
-			    	if (ga) {
-					    ga('set', {
-						  page: '/#u/_'+app.genUrlName(filteredUser.get('name'))+'-'+filteredUser.id,
-						  title: filteredUser.get('name')+"'s recipes"
-						});
-					    ga('send', 'pageview');
-				    }
-		    	}
-		    	else {
-		    		$('.mdl-layout-title').html('');
-		    		$('header .add-favorite i').text('');	
-		    	}
-		    	break;
 	    	case 'list':
-	    		app.router.navigate( "/", { trigger: false } );
-	    		window.document.title='Just Food You';
 		    	$('#recipeResultsList').show();
 		    	$('#btnCreateRecipe').show();
-
+	    		window.document.title='Just Food You';
 		    	var filteredUser = app.recipesFiltermanager.get('user');
 		    	if (filteredUser) {
+		    		app.router.navigate("/u/"+app.genUrlName(filteredUser.get('name'))+"-"+filteredUser.id, {trigger: false});
 			    	$('.mdl-layout-title').html(filteredUser.get('name') + app.localeDict('s_recipes'));
 			    	window.document.title='Just Food You - '+filteredUser.get('name') + app.localeDict('s_recipes');
 
@@ -454,6 +430,7 @@ var s, app = {
 				    }
 		    	}
 		    	else {
+		    		app.router.navigate( "/", { trigger: false } );
 		    		$('.mdl-layout-title').html('');	
 		    		$('header .add-favorite i').text(''); 
 		    	}
@@ -605,6 +582,9 @@ var s, app = {
 		});}
     },
     viewRecipe: function(recipe) {
+    	if (this.recipeView) {
+    		this.recipeView.close();
+    	}
     	app.router.navigate( "/recipe/_"+app.genUrlName(recipe.get('name'))+"-"+recipe.id, { trigger: false } );
     	window.document.title='Just Food You - '+recipe.get('name');
     	this.recipeView = new app.RecipeView({model: recipe});
@@ -653,13 +633,14 @@ var s, app = {
 			user           : null,
 			orderBy        : 'updatedAt',
 			orderAsc       : 'desc',
-			limit          : 21,
+			limit          : 100,
 			start          : 0
 	    },
 	    validate: function(attrs) {
 	    	if ( _.has(attrs,"user") ) {
 				app.loadLabels(attrs.user);
 				
+				this.set('favorites', false);
 				this.set('text','');
 				$('#search').val('');
 				$('.app-header .mdl-textfield--expandable').removeClass('is-focused');
@@ -677,7 +658,7 @@ var s, app = {
 				if(attrs.user==null) {
 					this.set('labels', []);
 
-					var user = new Parse.User();
+					var user = new Parse.User(); //TODO csinalni meg nemet admin usert
 					if (app.localeCode=='hu') {
 						user.id = 'KiswlE2QF5';
 					}
@@ -794,7 +775,7 @@ var s, app = {
 						for (var i = 0; i < labels.length; i++) {
 							var labelId = (labels[i].id)?labels[i].id:labels[i];
 							ids.push( labelId );
-							// gaKeywords += "+label:"+label[i].get('name');  // TODO
+							gaKeywords += "+label:"+labels[i].get('name');  // TODO
 							$('.label-'+labelId).addClass('mdl-color-text--light-green-400');
 							$('.label-'+labelId).removeClass('mdl-color-text--light-green-900');
 						};
@@ -844,7 +825,7 @@ var s, app = {
 				app.recipesFiltermanager.set('foundCount',count);
 			});
 			// limit
-	    	var limit = (this.get('limit'))?this.get('limit'):21;
+	    	var limit = (this.get('limit'))?this.get('limit'):100;
 			this.qRecipe.limit(limit);
 			var skip = (this.get('skip'))?this.get('skip'):0;
 			this.qRecipe.skip(skip);
@@ -890,7 +871,7 @@ var s, app = {
 			uQuery.equalTo('objectId',uid);
 			uQuery.find().then(function (list) {
 				app.recipesFiltermanager.set( { user: list[0] }, { validate: true } );
-				app.switchLayout('user');
+				app.switchLayout('list');
 				app.recipesFiltermanager.search();
 			})
 		},
@@ -936,7 +917,7 @@ var s, app = {
 				uQuery.equalTo('objectId',uid);
 				uQuery.find().then(function (list) {
 					app.recipesFiltermanager.set( {user : list[0] }, { validate: true } );
-					app.switchLayout('user');
+					app.switchLayout('list');
 					app.recipesFiltermanager.search();
 				})
 			}
@@ -1100,8 +1081,7 @@ var s, app = {
 			if (app.loginedUser) {
 				app.recipesFiltermanager.set( { user: app.loginedUser }, { validate:true } );
 				app.recipesFiltermanager.set('favorites', false);
-				app.router.navigate("/u/"+app.genUrlName(app.loginedUser.get('name'))+"-"+app.loginedUser.id, {trigger: false});
-				app.switchLayout('user');
+				app.switchLayout('list');
 				app.recipesFiltermanager.search();
 				$('main').scrollTop(0);
 			}
@@ -1445,7 +1425,7 @@ var s, app = {
 					  "image/jpeg":"jpg"
 					}
 					var imgUrl = 'https://s3.amazonaws.com/'+s.amazonBucket+'/users/'+app.loginedUser.id+'/recipes/'+model.id+'/cover.'+imageExts[imageFile.type];
-					model.set('coverImageUrl',  imgUrl);
+					model.set('coverImageUrl',  imgUrl+'?' +new Date().getTime() );
 					model.save();
 			        Parse.Cloud.run('awsInfo', {file: 'users/'+app.loginedUser.id+'/recipes/'+model.id+'/cover', fileType: imageFile.type}, {
 			  			success: function(result) {
@@ -1634,13 +1614,13 @@ var s, app = {
 			var $list = this.$el.empty();
 			var counter = 0;
 			this.collection.each(function(model) {
-				if(counter==2) {
-					$list.append(this.renderAd());
-					(adsbygoogle = window.adsbygoogle || []).push({});
-				}
-				else {
-					this.renderOne(model);
-				}
+				// if(counter==2) {
+				// 	$list.append(this.renderAd());
+				// }
+				// else {
+				// }
+					// (adsbygoogle = window.adsbygoogle || []).push({});
+				this.renderOne(model);
 				counter++;
 				if(counter % 2 == 0) {
 					$list.append('<div class="clearfix visible-md-block"></div>');
@@ -1684,6 +1664,11 @@ var s, app = {
 			app.recipesFiltermanager.toggleLabel(this.model);
 			app.switchLayout('list');
 			app.recipesFiltermanager.search();
+			if (ga) { ga('send', {
+				'hitType'       : 'event',  // Required.
+				'eventCategory' : 'label',  // Required.
+				'eventAction'   : 'toggle', // Required.
+			});}
 		},
 		onDelete: function(e) {
 			this.model.destroy({
@@ -1720,7 +1705,7 @@ var s, app = {
 		doFilter: function(event) {
 			app.recipesFiltermanager.set({user: this.model}, { validate: true } );
 			app.recipesFiltermanager.search();
-			app.switchLayout('user');
+			app.switchLayout('list');
 		}
 	});
 
