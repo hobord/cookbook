@@ -1,5 +1,11 @@
 // var Typeahead = Backbone.Typeahead;
-
+Backbone.View.prototype.close = function() {
+	this.remove();
+	this.unbind();
+	if (this.onClose) {
+		this.onClose();
+	}
+}
 var s, app = {
     settings: {
     	applicationId: "uJLDpdzRo0AS07SHiXDRUR6dX2egvU9rKcbHkIMP",
@@ -18,7 +24,8 @@ var s, app = {
 		'navigationLabel'      : '#navigationLabel-tmpl',
 		'navigationLabelGroup' : '#navigationLabelGroup-tmpl',
 		'followedUserList'	   : '#followedUserList-tmpl',
-		'followedUserItem'	   : '#followedUserItem-tmpl'
+		'followedUserItem'	   : '#followedUserItem-tmpl',
+		'googleAdsCard'		   : '#googleAdsCard-tmpl'
     },
     labelCollection: null,
     loginedUser: null, //User.labelCollection = null
@@ -560,6 +567,7 @@ var s, app = {
     	});
 
     	app.editRecipe(newRecipe);
+
     	if (ga) { ga('send', {
 			'hitType'       : 'event',        // Required.
 			'eventCategory' : 'recipe',         // Required.
@@ -786,7 +794,7 @@ var s, app = {
 						for (var i = 0; i < labels.length; i++) {
 							var labelId = (labels[i].id)?labels[i].id:labels[i];
 							ids.push( labelId );
-							gaKeywords += "+label:"+label[i].get('name');
+							// gaKeywords += "+label:"+label[i].get('name');  // TODO
 							$('.label-'+labelId).addClass('mdl-color-text--light-green-400');
 							$('.label-'+labelId).removeClass('mdl-color-text--light-green-900');
 						};
@@ -977,7 +985,7 @@ var s, app = {
 			if (app.loginedUser) {
 				user = app.loginedUser.toJSON();
 			}
-			var html = $(this.template({user:user}));
+			var html = $(this.template({user:user, currentLocale:app.localeCode }));
 			this.$el.html(html);
 			componentHandler.upgradeAllRegistered();
 
@@ -1085,6 +1093,7 @@ var s, app = {
 				app.recipesFiltermanager.set('favorites', false);
 				app.switchLayout('list');
 				app.recipesFiltermanager.search();
+				$('main').scrollTop(0);
 		    }
 		},
 		listMyRecipes: function(e) {
@@ -1094,6 +1103,7 @@ var s, app = {
 				app.router.navigate("/u/"+app.genUrlName(app.loginedUser.get('name'))+"-"+app.loginedUser.id, {trigger: false});
 				app.switchLayout('user');
 				app.recipesFiltermanager.search();
+				$('main').scrollTop(0);
 			}
 			else {
 				app.applicationView.facebookLogin(e);
@@ -1116,7 +1126,7 @@ var s, app = {
 			app.router.navigate("/", {trigger: false});
 			app.switchLayout('list');
 			app.recipesFiltermanager.search();
-		
+			$('main').scrollTop(0);
 			return false;
 		},
 		listFavoritedRecipes: function(e) {
@@ -1126,6 +1136,7 @@ var s, app = {
 				app.router.navigate("/", {trigger: false});
 				app.switchLayout('list');
 				app.recipesFiltermanager.search();
+				$('main').scrollTop(0);
 			}
 			else {
 				app.applicationView.facebookLogin(e);
@@ -1148,7 +1159,7 @@ var s, app = {
 	});
 
 	app.RecipeView = Backbone.View.extend({
-		el       : '#viewRecipePlaceholder',
+		// el       : '#viewRecipePlaceholder',
 		events : {
 			'click .btnEdit'        : 'onEdit',
 			'click .btnClone'       : 'onClone',
@@ -1167,11 +1178,6 @@ var s, app = {
 			this.listenTo(this.model, 'change', this.render);
 		    this.render();
 		},
-		remove: function() {
-			this.$el.empty().off(); /* off to unbind the events */
-			this.stopListening();
-			return this;
-		},
 		render: function() {
 			var owriter = (this.model.get('originalWriter'))?this.model.get('originalWriter').toJSON():null;
 			var html = this.template({
@@ -1185,7 +1191,7 @@ var s, app = {
 			var recipeLabels = this.model.get('labels');
 
 			this.$el.html(html);
-
+			$('#viewRecipePlaceholder').append(this.$el);
 			var labels = new Array();
 			for (var j = 0; j < recipeLabels.length; j++) {
 				if (recipeLabels[j]) {
@@ -1204,11 +1210,9 @@ var s, app = {
 			app.sendToKindle();
 		},
 		onAuthor: function() {
-			// body...
 			app.router.navigate("/u/"+app.genUrlName(this.model.get('user').get('name'))+"-"+this.model.get('user').id, {trigger: true});
 		},
 		onOriginalWriter: function() {
-			// body...
 			app.router.navigate("/u/"+app.genUrlName(this.model.get('originalWriter').get('name'))+"-"+this.model.get('originalWriter').id, {trigger: true});
 		},
 		onEdit: function() {
@@ -1230,17 +1234,18 @@ var s, app = {
 		onClone: function(event) {
 			if(app.loginedUser) {
 				app.editRecipe(app.cloneRecipe(this.model));
+				this.close();
 			}
 			else {
 				app.applicationView.facebookLogin(event);
 			}
 		},
 		onDiscard:function() {
-			this.remove();
 			app.switchLayout('list');
 			if(app.listedRecipes.length == 0) {
 				app.recipesFiltermanager.search();
 			}
+			this.close();
 			app.recipeView = null;
 			delete this;
 		},
@@ -1252,7 +1257,6 @@ var s, app = {
 	});
 
 	app.EditRecipeView = Backbone.View.extend({
-		el       : '#editRecipePlaceholder',
 		events   : {
 			'change .name'                : 'onChangeName',
 			'change .description'         : 'onChangeDescription',
@@ -1263,22 +1267,17 @@ var s, app = {
 			'click #btnEditRecipeDiscard' : 'onDiscard',
 			'click #btnEditRecipeDelete'  : 'onDelete'
 		},
-
 		initialize: function() {
 			this.template = _.template(underi18n.template(app.templates.editRecipe, app.localeDict));
 		    this.render();
 		    this.renderLabelsGroups();
 		},
-		remove: function() {
-			this.$el.empty().off(); /* off to unbind the events */
-			this.stopListening();
-			return this;
-		},
 		render: function() {
 			$('.mdl-layout__header-row .recipeName').text(': '+this.model.get('name'));
 			var html = this.template({id: this.model.id, recipe: this.model.toJSON()});
+			// this.$el.html(html);
 			this.$el.html(html);
-
+			$('#editRecipePlaceholder').append(this.$el);
 			$('.upload_image').on('click', function() {
 				$('#image_upload').click();
 			});
@@ -1481,7 +1480,7 @@ var s, app = {
 						    	app.loadLabels(app.loginedUser);
 							    app.spinnerStop();
 								app.viewRecipe(app.editRecipeView.model);
-								app.editRecipeView.remove();
+								app.editRecipeView.close();
 								if (app.recipeListView) {
 									app.recipeListView.trigger('change');
 								}
@@ -1511,7 +1510,7 @@ var s, app = {
 					app.loadLabels(app.loginedUser);
 					app.spinnerStop();
 					app.viewRecipe(app.editRecipeView.model);
-					app.editRecipeView.remove();
+					app.editRecipeView.close();
 					if (app.recipeListView) {
 						app.recipeListView.trigger('change');
 					}
@@ -1523,7 +1522,7 @@ var s, app = {
 				});}
 			})
 
-			// this.remove();
+			// this.close();
 		},
 		onDiscard:function() {
 			$('.mdl-layout__header-row .recipeName').text('');
@@ -1533,9 +1532,9 @@ var s, app = {
 			else {
 				app.switchLayout('list');
 			}
-			this.remove();
+			this.close();
+			app.editRecipeView.close();
 			app.editRecipeView = null;
-			delete this;
 		},
 		onDelete: function(e) {
 			this.model.destroy({
@@ -1547,10 +1546,11 @@ var s, app = {
 				}
 			});
 			if (ga) { ga('send', {
-				'hitType'       : 'event',        // Required.
-				'eventCategory' : 'recipe',         // Required.
+				'hitType'       : 'event',  // Required.
+				'eventCategory' : 'recipe', // Required.
 				'eventAction'   : 'delete', // Required.
 			});}
+			app.editRecipeView.close();
 		}
 	})
 
@@ -1634,12 +1634,12 @@ var s, app = {
 			var $list = this.$el.empty();
 			var counter = 0;
 			this.collection.each(function(model) {
-				if(counter==5) {
+				if(counter==2) {
 					$list.append(this.renderAd());
 					(adsbygoogle = window.adsbygoogle || []).push({});
 				}
 				else {
-					this.renderOne(model)
+					this.renderOne(model);
 				}
 				counter++;
 				if(counter % 2 == 0) {
@@ -1653,7 +1653,8 @@ var s, app = {
 			return this;
 		},
 		renderAd: function() {
-			return '<div class="col-sm-12 col-md-6 col-lg-4"><div className="recipe-card-content mdl-shadow--2dp"><ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-8159881314741914" data-ad-slot="5757549534" data-ad-format="auto"></ins></div></div>';
+			var template = _.template(app.templates.googleAdsCard);
+			return template();
 		},
 		renderOne: function(model) {
 			var item = new app.RecipeListItemView({model: model});
@@ -1695,6 +1696,7 @@ var s, app = {
 				'eventCategory' : 'label',         // Required.
 				'eventAction'   : 'delete', // Required.
 			});}
+			this.close();
 		}
 	});
 
@@ -1819,6 +1821,7 @@ var s, app = {
 				'eventCategory' : 'label',         // Required.
 				'eventAction'   : 'deleteGroup', // Required.
 			});}
+			this.close();
 		},
 		onCreateLabel: function(event) {
 			if(event.keyCode == 13) {
@@ -1890,49 +1893,90 @@ var s, app = {
 			'FavoritedPeople'		  : 'Friends',
 			'originalWriter'		  : 'Original writer',
 			'CreateLabelGroup'		  : 'Create label group',
-			'CreateLabel'		  : 'Create label'
+			'CreateLabel'		      : 'Create label'
 		},
 		'hu' : {
-			'All'				: 'Összes',
-			'Favorites'         : 'Kedvencek',
-			'My'				: 'Saját',
-			'Shared'			: 'Megosztott',
-			'new'               : 'új',
-			'search'            : 'keres',
-			'About'             : 'Rólunk',
-			'Contact'           : 'Kapcsolat',
-			'Legal_information' : 'Szerződési információk',
-			'Save_to_My_Book'   : 'Mentsd el nekem!',
-			'Edit'              : 'Szerkeszt',
-			'Delete'            : 'Törlés',
-			'Save'              : 'Mentés',
-			'Read'              : 'Olvas',
-			'Close'             : 'Bezár',
-			'Name'              : 'Név',
-			'Description'       : 'Leírás',
-			'Ingredients'       : 'Hozzávalók',
-			'Directions'        : 'Elkészítés',
-			'Labels'            : 'Cimkék',
-			'Discard'           : 'Elvet',
-			'Save changes'      : 'Mentés',
-			'Logout'            : 'Kilépés',
-			'Login'             : 'Belépés',
-			'Sign_In'           : 'Regisztráció',
-			's_recipes'			: " receptjei",
+			'All'                     : 'Összes',
+			'Favorites'               : 'Kedvencek',
+			'My'                      : 'Saját',
+			'Shared'                  : 'Megosztott',
+			'new'                     : 'új',
+			'search'                  : 'keres',
+			'About'                   : 'Rólunk',
+			'Contact'                 : 'Kapcsolat',
+			'Legal_information'       : 'Szerződési információk',
+			'Save_to_My_Book'         : 'Mentsd el nekem!',
+			'Edit'                    : 'Szerkeszt',
+			'Delete'                  : 'Törlés',
+			'Save'                    : 'Mentés',
+			'Read'                    : 'Olvas',
+			'Close'                   : 'Bezár',
+			'Name'                    : 'Név',
+			'Description'             : 'Leírás',
+			'Ingredients'             : 'Hozzávalók',
+			'Directions'              : 'Elkészítés',
+			'Labels'                  : 'Cimkék',
+			'Discard'                 : 'Elvet',
+			'Save changes'            : 'Mentés',
+			'Logout'                  : 'Kilépés',
+			'Login'                   : 'Belépés',
+			'Sign_In'                 : 'Regisztráció',
+			's_recipes'               : " receptjei",
 			'placeholder_recipe_name' : 'Recept neve',
-			'placeholder_recipe_desc' : 'Rövid imsertető',
+			'placeholder_recipe_desc' : 'Rövid ismertető',
 			'placeholder_recipe_ingr' : 'Hozzávalók',
-			'placeholder_recipe_dir' : 'Elkészítése',
-			'editRecipePrepTime'      : 'Elkészítéselőkészítés ideje (perc):',
+			'placeholder_recipe_dir'  : 'Elkészítése',
+			'editRecipePrepTime'      : 'Előkészítés ideje (perc):',
 			'editRecipeCookTime'      : ', elkészítés ideje:',
 			'editRecipeMakeTime'      : ', összesen:',
-			'makeTime'				  : 'Elkészítése (perc):',
-			'AllinJustFoodYou'				  : 'All in Just Food You',
-			'FavoritedPeople'		  : 'Barátok',
-			'originalWriter'		  : 'Eredetileg lejegyezte',
-			'CreateLabelGroup'		  : 'Cimkecsoport létrehozása',
-			'CreateLabel'    		  : 'Cimke létrehozása',
-		} 
+			'makeTime'                : 'Elkészítése (perc):',
+			'AllinJustFoodYou'        : 'All in Just Food You',
+			'FavoritedPeople'         : 'Barátok',
+			'originalWriter'          : 'Eredetileg lejegyezte',
+			'CreateLabelGroup'        : 'Cimkecsoport létrehozása',
+			'CreateLabel'             : 'Cimke létrehozása',
+		},
+		'de' : {
+			'All'                     :'Alle',
+			'Favorites'               :'Lieblinge',
+			'My'                      :'Eigene ',
+			'Shared'                  :'Freigegeben',
+			'new'                     :'Neu',
+			'search'                  :'Suchen',
+			'About'                   :'Über uns',
+			'Contact'                 :'Kontakt',
+			'Legal_information'       :'Nutzungsbedingungen',
+			'Save_to_My_Book'         :'Speichere es für mich',
+			'Read'                    :'Redigieren',
+			'Close'                   :'Löschen',
+			'Edit'                    :'Speichern',
+			'Delete'                  :'Lesen',
+			'Save'                    :'Schliessen',
+			'Name'                    :'Name',
+			'Description'             :'Beschreibung',
+			'Ingredients'             :'Zutaten',
+			'Directions'              :'Zubereitung',
+			'Labels'                  :'Tags',
+			'Discard'                 :'Verwerfen',
+			'Save changes'            :'Speichern',
+			'Logout'                  :'Logout',
+			'Login'                   :'Login',
+			'Sign_In'                 :'Registirerung',
+			's_recipes'               :'Rezept von',
+			'placeholder_recipe_name' :'Name des Rezepts',
+			'placeholder_recipe_desc' :'Kurze Beschreibung',
+			'placeholder_recipe_ingr' :'Zutaten',
+			'placeholder_recipe_dir'  :'Zubereitung',
+			'editRecipePrepTime'      :'Vorbereitungszeit',
+			'editRecipeCookTime'      :'Kochzeit',
+			'editRecipeMakeTime'      :'Insgesamt',
+			'makeTime'                :'Arbeitszeit',
+			'AllinJustFoodYou'        :'Alles in Just Food You',
+			'FavoritedPeople'         :'Freunde',
+			'originalWriter'          :'Stammt von',
+			'CreateLabelGroup'        :'Erstellung einer Taggruppe',
+			'CreateLabel'             :'Erstellung eines Tags'
+		}
 
 	};
 

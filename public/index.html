@@ -114,8 +114,17 @@
   
 
 
-
-  
+<script type="text/template" id="googleAdsCard-tmpl">
+<div class="col-sm-12 col-md-6 col-lg-4">
+    <div class="recipe-card-content google-crad-add-content mdl-shadow--2dp">
+      <div class="thumbnail">
+        <ins class="adsbygoogle" style="display: block; height: 280px;" data-ad-client="ca-pub-8159881314741914" data-ad-slot="5757549534" data-ad-format="auto" data-adsbygoogle-status="done">
+            <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-8159881314741914" data-ad-slot="5757549534" data-ad-format="auto"></ins>
+        </ins>
+      </div>
+    </div>
+</div>
+</script>  
 
 <script type="text/template" id="followedUserList-tmpl">
 <div class='app-navigation mdl-navigation mdl-color--light-green-800'>
@@ -176,9 +185,9 @@
       <!-- <a class="print pull-right mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect mdl-button--colored ">
         <i class="material-icons">local_printshop</i>
       </a> -->
-      <div class="pull-right fb-like" data-href="http://www.justfoodyou.com/#recipe/r-<%= id %>" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
     </div>
     <div class="mdl-card__menu">
+      <div class="fb-like" data-href="http://www.justfoodyou.com/#recipe/r-<%= id %>" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
     </div>
   </div>
 </script> 
@@ -353,7 +362,14 @@
           <div class="mdl-layout-spacer"></div>
           
           <!-- <a class="help" href=""><i class="mdl-color-text--light-green-900 material-icons">help_outline</i></a> -->
-          
+          <button id="btnLng" class="pull-right mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--icon">
+            <%= currentLocale %>
+          </button>
+          <ul class="mdl-menu mdl-menu--top-left mdl-js-menu mdl-js-ripple-effect" for="btnLng">
+            <button class="mdl-menu__item changeLang" data='en'>en</button>
+            <button class="mdl-menu__item changeLang" data='de'>de</button>
+            <button class="mdl-menu__item changeLang" data='hu'>hu</button>
+          </ul>          
           <a class="btnSignIn btn btn-block btn-social btn-facebook <% if(user) { %>hidden<% } %>">
             <i class="fa fa-facebook"></i> Sign in with Facebook
           </a>
@@ -365,13 +381,6 @@
             </button>
             <ul class="mdl-menu mdl-menu--top-right mdl-js-menu mdl-js-ripple-effect" for="accbtn">
               <button class="mdl-menu__item btnLogout"><%_ Logout %></button>
-            </ul>
-            <button id="btnLng" class="pull-right mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--icon">
-              hu
-            </button>
-            <ul class="mdl-menu mdl-menu--top-right mdl-js-menu mdl-js-ripple-effect" for="btnLng">
-              <button class="mdl-menu__item changeLang" data='en'>en</button>
-              <button class="mdl-menu__item changeLang" data='hu'>hu</button>
             </ul>
           </div> 
 

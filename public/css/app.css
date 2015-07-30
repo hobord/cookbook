@@ -303,6 +303,10 @@ div.mdl-navigation{
 .recipe-card {
 	padding: 5px;
 }
+.google-crad-add-content {
+  min-height: 586px;
+  padding-top: 70px!important;
+}
 .recipe-card-content {
 	padding: 5px;
 }
