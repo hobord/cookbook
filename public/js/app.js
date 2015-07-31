@@ -43,17 +43,17 @@ var s, app = {
 
 		this.loginedUser = null;
     	this.facebookUser = null;
-		window.fbAsyncInit = function() {
-		    Parse.FacebookUtils.init({ // this line replaces FB.init({
-		      appId      : s.facebookAppId, // Facebook App ID
-		      status     : true,  // check Facebook Login status
-		      cookie     : true,  // enable cookies to allow Parse to access the session
-		      xfbml      : true,  // initialize Facebook social plugins on the page
-		      version    : 'v2.3' // point to the latest Facebook Graph API version
-		    });
-		}
 
-		Parse.initialize(s.applicationId, s.applicationKey);
+		// Parse.initialize(s.applicationId, s.applicationKey);
+		// window.fbAsyncInit = function() {
+		//     Parse.FacebookUtils.init({ // this line replaces FB.init({
+		//       appId      : s.facebookAppId, // Facebook App ID
+		//       status     : true,  // check Facebook Login status
+		//       cookie     : true,  // enable cookies to allow Parse to access the session
+		//       xfbml      : true,  // initialize Facebook social plugins on the page
+		//       // version    : 'v2.4' // point to the latest Facebook Graph API version
+		//     });
+		// }
 
 		// Models
 		this.Recipe          = Parse.Object.extend("Recipe");
@@ -1629,7 +1629,7 @@ var s, app = {
 					$list.append('<div class="clearfix visible-lg-block"></div>');
 				}
 		    }, this);
-
+			FB.XFBML.parse(this.el);
 			return this;
 		},
 		renderAd: function() {

@@ -96,6 +96,19 @@
     <script type="text/javascript" src="js/app.js"></script>
 
     <script type="text/javascript">
+    Parse.initialize('uJLDpdzRo0AS07SHiXDRUR6dX2egvU9rKcbHkIMP', 'LkeF59Hh5HXrketX8qw6SFWwFALnVu8vqJKwkp5n');
+    window.fbAsyncInit = function() {
+        Parse.FacebookUtils.init({ // this line replaces FB.init({
+          appId      : '890469204379378', // Facebook App ID
+          status     : true,  // check Facebook Login status
+          cookie     : true,  // enable cookies to allow Parse to access the session
+          xfbml      : true,  // initialize Facebook social plugins on the page
+          version    : 'v2.4' // point to the latest Facebook Graph API version
+        });
+    }
+    </script>
+
+    <script type="text/javascript">
     //Facebook init
       (function(d, s, id){
           var js, fjs = d.getElementsByTagName(s)[0];
