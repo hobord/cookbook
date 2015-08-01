@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Just Food You</title>
+	<link rel="shortcut icon" sizes="32x32" type="image/png" href="/icon_32.png" />
+    <meta charset="utf-8">
+    <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+	<script src="//www.parsecdn.com/js/parse-1.4.2.min.js"></script>
+	<script type="text/javascript" src="//connect.facebook.net/en_US/sdk.js"></script>
+	<script type="text/javascript">
+    window.fbAsyncInit = function() {
+        Parse.FacebookUtils.init({ // this line replaces FB.init({
+          appId      : '890469204379378', // Facebook App ID
+          status     : true,  // check Facebook Login status
+          cookie     : true,  // enable cookies to allow Parse to access the session
+          xfbml      : true,  // initialize Facebook social plugins on the page
+          version    : 'v2.3' // point to the latest Facebook Graph API version
+        });
+    }
+
+    Parse.initialize('uJLDpdzRo0AS07SHiXDRUR6dX2egvU9rKcbHkIMP', 'LkeF59Hh5HXrketX8qw6SFWwFALnVu8vqJKwkp5n');
+
+
+
+   //  $(document).ready(function() {
+   //  (function(d, s, id){
+   //        var js, fjs = d.getElementsByTagName(s)[0];
+   //        if (d.getElementById(id)) {return;}
+   //        js = d.createElement(s); js.id = id;
+			// js.src = "//connect.facebook.net/en_US/sdk.js";
+   //        fjs.parentNode.insertBefore(js, fjs);
+   //    }(document, 'script', 'facebook-jssdk'));
+
+   //  })
+	</script>
+</head>
+<body>
+	<div class="fb-like" data-href="http://www.justfoodyou.com/#recipe/r-<%= id %>" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+</body>

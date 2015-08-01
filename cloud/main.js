@@ -223,7 +223,38 @@ deafultLabels = {
         weight: 5,
         labels: []
       }
-
+  ],
+  de: [
+      { 
+        name: 'Kategorien',
+        weight: 0,
+        labels: ['Dessert','Vorspeisen','Hauptgerichte','Obst','Fisch','Fleisch','Kekse','Beilage','Suppen','Muffins','Saucen','Gebäck, Brot','Frühstück','Salate','Geflügel','Tagine','Nudeln','Vegan','Gemüse']
+      },
+      { 
+        name: 'Zutaten',
+        weight: 1,
+        labels: ['Kalb','Lamm','Huhn','Zucchini','Schwein','Ente','Couscous','Linse','Gans','Rind','Leber','Aubergine','Paprika']
+      },
+      { 
+        name: 'Events',
+        weight: 2,
+        labels: ['Abendessen','Frühstück','Mittagessen','Hochzeit','Chanukka','Ostern','Weihnachten','Party','Geburtstag']
+      },
+      { 
+        name: 'Nationale Küchen',
+        weight: 3,
+        labels: ['griechsich','indisch','isrealisch','chinesisch','marokkanisch','italienisch','thailändisch','türkisch']
+      },
+      { 
+        name: 'Special',
+        weight: 4,
+        labels: ['Vegan','Koscher','Diabetisch','Glutenfrei']
+      },
+      { 
+        name: 'Labels',
+        weight: 5,
+        labels: []
+      }
   ],
 }
 

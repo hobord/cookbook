@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -95,36 +94,8 @@
     <link rel="stylesheet" type="text/css" href="css/app.css">
     <script type="text/javascript" src="js/app.js"></script>
 
-    <script type="text/javascript">
-    Parse.initialize('uJLDpdzRo0AS07SHiXDRUR6dX2egvU9rKcbHkIMP', 'LkeF59Hh5HXrketX8qw6SFWwFALnVu8vqJKwkp5n');
-    window.fbAsyncInit = function() {
-        Parse.FacebookUtils.init({ // this line replaces FB.init({
-          appId      : '890469204379378', // Facebook App ID
-          status     : true,  // check Facebook Login status
-          cookie     : true,  // enable cookies to allow Parse to access the session
-          xfbml      : true,  // initialize Facebook social plugins on the page
-          version    : 'v2.4' // point to the latest Facebook Graph API version
-        });
-    }
-    </script>
 
-    <script type="text/javascript">
-    //Facebook init
-      (function(d, s, id){
-          var js, fjs = d.getElementsByTagName(s)[0];
-          if (d.getElementById(id)) {return;}
-          js = d.createElement(s); js.id = id;
-          js.src = "//connect.facebook.net/en_US/sdk.js";
-          fjs.parentNode.insertBefore(js, fjs);
-      }(document, 'script', 'facebook-jssdk'));
 
-      $(document).ready(function() {
-          // App init
-          app.init();
-      });
-    
-    </script>
-  
 
 
 <script type="text/template" id="googleAdsCard-tmpl">
@@ -198,10 +169,15 @@
       </a> -->
     </div>
     <div class="mdl-card__menu">
-      <div class="fb-like" data-href="http://www.justfoodyou.com/#recipe/r-<%= id %>" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+
     </div>
   </div>
 </script> 
+
+<script type="text/template">
+  <div class="fb-like" data-href="http://www.justfoodyou.com/#recipe/r-<%= id %>" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>
+</script>
+
 
 <script type="text/template" id="viewRecipe-tmpl">
 <div id="viewRecipe" class="recipe-<%= id %>" itemscope itemtype="http://schema.org/Recipe">
@@ -308,6 +284,11 @@
     <label id="editRecipePrivate" for="switch-private" class="mdl-switch mdl-js-switch mdl-js-ripple-effect">
       <input type="checkbox" id="switch-private" class="mdl-switch__input" <% if (recipe.private) { %>checked<% } %> />
       <span class="mdl-switch__label">Private</span>
+    </label>
+
+    <label id="editRecipePostFacebook" for="switch-postfacebok" class="mdl-switch mdl-js-switch mdl-js-ripple-effect">
+      <input type="checkbox" id="switch-postfacebok" class="mdl-switch__input" <% if (!id) { %>checked<% } %> />
+      <span class="mdl-switch__label">Share to Facebook</span>
     </label>
 
     <label for="editRecipeLabels" class=""><%_ Labels %></label>
@@ -417,19 +398,35 @@
     <div id="fb-root"></div>
 </script>
 
-
-<!-- cookbook -->
-<!-- <ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-8159881314741914"
-     data-ad-slot="5757549534"
-     data-ad-format="auto"></ins>
-<script>
-(adsbygoogle = window.adsbygoogle || []).push({});
-</script> -->
   </head>
   <body>
     
     <script src="//storage.googleapis.com/code.getmdl.io/1.0.0/material.min.js"></script>
+    <script type="text/javascript">
+      Parse.initialize('uJLDpdzRo0AS07SHiXDRUR6dX2egvU9rKcbHkIMP', 'LkeF59Hh5HXrketX8qw6SFWwFALnVu8vqJKwkp5n');
+      window.fbAsyncInit = function() {
+          Parse.FacebookUtils.init({ // this line replaces FB.init({
+            appId      : '890469204379378', // Facebook App ID
+            status     : true,  // check Facebook Login status
+            cookie     : true,  // enable cookies to allow Parse to access the session
+            xfbml      : true,  // initialize Facebook social plugins on the page
+            version    : 'v2.3' // point to the latest Facebook Graph API version
+          });
+      }
+    </script>
+    <script type="text/javascript" src="//connect.facebook.net/en_US/sdk.js"></script>
+    <script type="text/javascript">
+      // (function(d, s, id){
+      //   var js, fjs = d.getElementsByTagName(s)[0];
+      //   if (d.getElementById(id)) {return;}
+      //   js = d.createElement(s); js.id = id;
+      //   // js.src = "//connect.facebook.net/en_US/sdk/debug.js";
+      //   js.src = "//connect.facebook.net/en_US/sdk.js";
+      //   fjs.parentNode.insertBefore(js, fjs);
+      // }(document, 'script', 'facebook-jssdk'));
+      // Parse.FacebookUtils.init();
+
+      app.init();
+    </script>
   </body>
 </html>

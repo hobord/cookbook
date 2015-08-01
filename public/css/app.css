@@ -427,9 +427,9 @@ div.originalWriter img {
 #editRecipe input.time {
 	width: 40px;
 }
-#editRecipePrivate {
+#editRecipePrivate, #editRecipePostFacebook {
 	text-align: right;
-    padding-right: 27px;
+  padding-right: 27px;
 }	
 .medium-editor-hidden {
     display: none !important;

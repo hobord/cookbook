@@ -6,6 +6,16 @@ Backbone.View.prototype.close = function() {
 		this.onClose();
 	}
 }
+Parse.User.prototype.getUrl =  function() {
+	if(this.get('name')) {
+		return app.settings.applicationUrl+this.getRelativeUrl();
+	}
+}
+Parse.User.prototype.getRelativeUrl = function() {
+	if(this.get('name')) {
+		return "#/u/"+app.utils.genUrlName(this.get('name'))+"-"+this.id
+	}
+}
 var s, app = {
     settings: {
     	applicationId: "uJLDpdzRo0AS07SHiXDRUR6dX2egvU9rKcbHkIMP",
@@ -14,7 +24,8 @@ var s, app = {
     	// facebookAppId: "905249916234640", //Test
     	AWSAccessKeyId: "AKIAJ5EPMLPXAQVXTNPQ",
     	amazonBucket: "cookbookimg",
-    	analytics: 'UA-5658990-11'
+    	analytics: 'UA-5658990-11',
+    	applicationUrl: 'http://www.justfoodyou.com/'
     },
     templates: {
     	'application'          : '#application-tmpl',
@@ -51,12 +62,11 @@ var s, app = {
 		//       status     : true,  // check Facebook Login status
 		//       cookie     : true,  // enable cookies to allow Parse to access the session
 		//       xfbml      : true,  // initialize Facebook social plugins on the page
-		//       // version    : 'v2.4' // point to the latest Facebook Graph API version
+		//       // version    : 'v2.3' // point to the latest Facebook Graph API version
 		//     });
 		// }
 
 		// Models
-		this.Recipe          = Parse.Object.extend("Recipe");
 		this.Ingredient      = Parse.Object.extend("Ingredient");
 		this.IngredientGroup = Parse.Object.extend("IngredientGroup");
 		this.LabelGroup      = Parse.Object.extend("LabelGroup");
@@ -77,23 +87,23 @@ var s, app = {
     		var userID = app.loginedUser.id;
 
     		var query = new Parse.Query(Parse.User);
-			query.get(app.loginedUser.id).then(function (user) {
-			    app.loginedUser = user;
+			// query.get(app.loginedUser.id).then(function (user) {
+			//     app.loginedUser = user;
 			    if(app.loginedUser.get('inited')) {
 			    	app.setAppLocale(app.loginedUser.get('locale'));
 			    	app.applicationView.render();
 			    	app.router = new app.AppRouter();
 					Backbone.history.start();
-			    	app.loadLabels(app.loginedUser);
-			    	app.loadFavoritedRecipes();
-			    	app.loadFollowedUsers();
+			    	app.labelManager.loadLabels(app.loginedUser);
+			    	app.userManager.loadFavoritedRecipes();
+			    	app.userManager.loadFollowedUsers();
 			    }
 			    else {
-			    	app.initNewUser();
+			    	app.userManager.initNewUser();
 			    }
-			}, function (error) {
-			    console.log(error);
-			});
+			// }, function (error) {
+			//     console.log(error);
+			// });
     	}
     	else {
     		// Anonymous user;
@@ -132,12 +142,7 @@ var s, app = {
     			location.reload();
     		});
     	}
-      	if (ga) { ga('send', {
-			'hitType'       : 'event',        // Required.
-			'eventCategory' : 'user',         // Required.
-			'eventAction'   : 'chanegLocale', // Required.
-			'eventLabel'   : localeCode
-		});}
+    	app.google.analytics.sendEvent('user', 'chanegLocale', localeCode);
     },
     loadTemplates: function() {
     	_.each(this.templates, function(item, key){
@@ -150,240 +155,6 @@ var s, app = {
     },
     spinnerStop: function() {
     	$('.appSpinner').removeClass('is-active');
-    },
-    initNewUser: function() {
-    	Parse.Cloud.run('initUser');
-    	location.reload();
-    },
-    loadLabels: function(filterUser) {
-    	var labelGroupQuery = new Parse.Query(app.LabelGroup);
-		labelGroupQuery.equalTo("user", filterUser);
-		labelGroupQuery.ascending('weight');
-		labelGroupQuery.find({
-			success: function(labelgroups) {
-				app.labelGroupCollection = new Parse.Collection(labelgroups, {model: app.LabelGroup});
-				
-				if (app.loginedUser && labelgroups.length && ( labelgroups[0].get('user').id == app.loginedUser.id  )) {
-					app.loginedUser.labelGroups = new Parse.Collection(labelgroups, {model: app.LabelGroup});
-				}
-
-				var labelQuery = new Parse.Query(app.Label);
-	    		labelQuery.equalTo("user", filterUser);
-	    		labelQuery.descending('name');
-	    		labelQuery.find({
-	    			success: function(labels) {
-						$(app.NavigationLabelGroupView.prototype.el).empty(); //#LabelGroupsViewPlaceholder'
-	    				app.labelCollection = new Parse.Collection(labels, {model: app.Label});
-	    				var navigationLabelGroupView = new app.NavigationLabelGroupView({collection: app.labelGroupCollection});
-	    				app.recipesFiltermanager.set('labels',[]);
-
-	    				if (app.loginedUser && labels.length && ( labels[0].get('user').id == app.loginedUser.id  )) {
-							app.loginedUser.labelCollection = new Parse.Collection(labels, {model: app.Label});
-						}
-	    			}
-	    		});
-			}
-		});
-    },
-    loadFavoritedRecipes: function() {
-    	var relation = app.loginedUser.relation("favorites");
-		var qRecipe = relation.query();
-		qRecipe.find().then(function (list) {
-		    app.favoritedRecipes = new Parse.Collection(list, {model:app.Recipe});
-		}, function (error) {
-		    console.log(error);
-		});
-    },
-    loadFollowedUsers: function() {
-    	var relation = app.loginedUser.relation("followedUsers");
-		var query = relation.query();
-    	query.ascending('name');
-		query.find().then(function (list) {
-		    app.followedUsers = new Parse.Collection(list, {model:Parse.User});
-		    app.followedUsersView = new app.NavigationFollowedUsersView({collection:app.followedUsers});
-		    app.followedUsersView.render();
-		}, function (error) {
-		    console.log(error);
-		});
-    },
-    followUser: function(user) {
-		var relation = app.loginedUser.relation('followedUsers');
-		var followed = app.followedUsers.get(user.id);
-		if (followed) {
-			relation.remove(user);
-			if (ga) { ga('send', {
-				'hitType'       : 'event',        // Required.
-				'eventCategory' : 'user',         // Required.
-				'eventAction'   : 'unfollow', // Required.
-			});}
-		}
-		else {
-			relation.add(user);
-	      	if (ga) { ga('send', {
-				'hitType'       : 'event',        // Required.
-				'eventCategory' : 'user',         // Required.
-				'eventAction'   : 'follow', // Required.
-			});}
-		}
-		this.loginedUser.save().then( 
-			function() {
-				$('#FollowedPeoplePlaceholder').removeClass('hide');
-				app.loadFollowedUsers();
-			},
-			function(error) {
-		        console.log("Error: " + error.code + " " + error.message);
-		    });
-		return followed;
-    },
-    toggleRecipeFavorite: function(recipe) {
-		var favorited = (app.favoritedRecipes.get(recipe.id))?true:false;
-		var favoritesRelation = app.loginedUser.relation('favorites');
-		if (favorited) {
-			favoritesRelation.remove(recipe);
-			if (ga) { ga('send', {
-				'hitType'       : 'event',        // Required.
-				'eventCategory' : 'recipe',         // Required.
-				'eventAction'   : 'unfavorite', // Required.
-			});}
-		}
-		else {
-			favoritesRelation.add(recipe);
-			if (ga) { ga('send', {
-				'hitType'       : 'event',        // Required.
-				'eventCategory' : 'recipe',         // Required.
-				'eventAction'   : 'favorite', // Required.
-			});}
-		}
-		app.loginedUser.save().then( 
-			function() {
-				app.loadFavoritedRecipes();
-			},
-			function(error) {
-		        console.log("Error: " + error.code + " " + error.message);
-		    });
-		return favorited;
-    },
-    createLabel: function(name, group) {
-    	var label = null;
-    	if (app.loginedUses) {
-	    	label = new app.Label({
-	    		name: name, 
-	    		labelgroup: group, 
-	    		user: app.loginedUser
-	    	});
-	    	label.save();
-	    	this.loadLabels();
-	    	if (ga) { ga('send', {
-				'hitType'       : 'event',        // Required.
-				'eventCategory' : 'label',         // Required.
-				'eventAction'   : 'create', // Required.
-			});}
-       	}
-    	return label;
-    },
-    setFacebookUser: function() {
-    	app.spinnerStart();
-    	FB.getLoginStatus(function(response) {
-		  	if (response && !response.error && response.status === 'connected') {
-		    	console.log('Logged in.');
-		    	FB.api('/me', {fields: 'id,name,email,last_name,first_name,gender,picture,link,timezone,updated_time,verified,locale'}, function(response) {
-		    		if (response && !response.error) {
-					  	// console.log('Your name is ' + response.name);
-					  	// console.log(response);
-					  	app.facebookUser = response;
-					  	if(app.facebookUser) {
-							var fid = app.facebookUser.id
-							var query = new Parse.Query(app.FacebookUser);
-							query.equalTo("fid", fid);
-							query.find({
-								success: function(results) {
-									var fid = app.facebookUser.id
-									app.loginedUser = Parse.User.current();
-							        if (results.length) {
-								        // facebook user existing so check update
-								        var fuser = results[0];
-								        if (fuser.updated_time!=app.facebookUser.updated_time) {
-								        	var id = fuser.id;
-								        	var fuser = new app.FacebookUser(app.facebookUser);
-											fuser.id  = id;
-											fuser.set("picture", app.facebookUser.picture.data.url);
-											fuser.set("fid",fid);
-											fuser.set("user", app.loginedUser);
-											fuser.save().then(function(fuser){
-												app.loginedUser.set('avatar', fuser.get('picture'));
-												app.loginedUser.set('name',   fuser.get('name'));
-												app.loginedUser.set('email',   fuser.get('email'));
-												// app.loginedUser.set("locale", fuser.get('locale'));
-												app.loginedUser.save().then(function(){
-													location.reload();
-												});	
-											});
-								        }
-							        }
-							        else {
-										// facebook user not existing so create
-										var fuser = new app.FacebookUser(app.facebookUser);
-										fuser.id = null;
-										fuser.set("fid",fid);
-										fuser.set("picture", app.facebookUser.picture.data.url);
-										fuser.set("user", app.loginedUser);
-										fuser.set("locale", app.facebookUser.locale);
-										fuser.save().then(function(fuser){
-											app.loginedUser.set('avatar', fuser.get('picture'));
-											app.loginedUser.set('name',   fuser.get('name'));
-											app.loginedUser.set("locale", fuser.get('locale'));
-											app.loginedUser.set('email',   fuser.get('email'));
-											app.loginedUser.set("profileLink", fuser.get('link'));
-											app.loginedUser.save().then(function(){
-												location.reload();
-											});	
-										});
-							        }
-							        app.facebookUser.id=fid;
-							        app.spinnerStop();
-								},
-								error: function(error) {
-									console.log("Error: " + error.code + " " + error.message);
-								}
-							});
-							// $('.app-avatar').attr('src',app.facebookUser.picture.data.url);
-							// $('.app-user-name').html(app.facebookUser.name);
-							// // app.startUser();
-				    	}
-					}
-				});
-		  	}
-		  	else {
-		  		console.log(response);
-		    	app.spinnerStop();
-		  	}
-		});
-    },
-    shareToFacebook: function(recipe) {
-    	var text = recipe.get('description');
-		var div = document.createElement("div");
-		div.innerHTML = text;
-		text = div.textContent || div.innerText || "";
-		var coverImageUrl = (recipe.get('coverImageUrl'))?recipe.get('coverImageUrl'):'https://s3.amazonaws.com/cookbookimg/icon_256.png'; 
-		FB.ui({
-		  method: 'share',
-		  display : "popup",
-		  href: "http://www.justfoodyou.com/#recipe/_"+app.genUrlName(recipe.get('name'))+"-"+recipe.id,
-		  name: recipe.get('name'),
-		  title: recipe.get('name'),
-		  picture: coverImageUrl,
-		  description: text
-		});
-		if (ga) {
-			ga('send', {
-			  'hitType': 'social',
-			  'socialNetwork': 'facebook',
-			  'socialAction': 'share',
-			  'socialTarget': 'http://www.justfoodyou.com',
-			  'page': "/#recipe/_"+app.genUrlName(recipe.get('name'))+"-"+recipe.id
-			});
-		}
-
     },
     switchLayout: function(layout) {
     	this.currentLayout = layout;
@@ -410,7 +181,7 @@ var s, app = {
 	    		window.document.title='Just Food You';
 		    	var filteredUser = app.recipesFiltermanager.get('user');
 		    	if (filteredUser) {
-		    		app.router.navigate("/u/"+app.genUrlName(filteredUser.get('name'))+"-"+filteredUser.id, {trigger: false});
+		    		app.router.navigate(filteredUser.getRelativeUrl(), {trigger: false});
 			    	$('.mdl-layout-title').html(filteredUser.get('name') + app.localeDict('s_recipes'));
 			    	window.document.title='Just Food You - '+filteredUser.get('name') + app.localeDict('s_recipes');
 
@@ -420,14 +191,7 @@ var s, app = {
 					else {
 						$('header .add-favorite i').text('favorite_border');
 					}
-
-			    	if (ga) {
-					    ga('set', {
-						  page: '/#u/_'+app.genUrlName(filteredUser.get('name'))+'-'+filteredUser.id,
-						  title: filteredUser.get('name')+"'s recipes"
-						});
-					    ga('send', 'pageview');
-				    }
+					app.google.analytics.pageview(filteredUser.getRelativeUrl(), filteredUser.get('name')+"'s recipes");
 		    	}
 		    	else {
 		    		app.router.navigate( "/", { trigger: false } );
@@ -447,180 +211,353 @@ var s, app = {
 				else {
 					$('header .add-favorite i').text('favorite_border');
 				}
-
-			    if (ga) {
-				    ga('set', {
-					  page: '/#recipe/_'+app.genUrlName(app.recipeView.model.get('name'))+'-'+app.recipeView.model.id,
-					  title: app.recipeView.model.get('name')
-					});
-					ga('send', 'pageview');
-			    }
+				app.google.analytics.pageview(app.recipeView.model.getRelativeUrl(), app.recipeView.model.get('name'));
 		    	break;	
 	    	case 'edit':
 		    	$("main").scrollTop();
 		    	$('#editRecipe').show();
 		    	$('.mdl-layout-title').html(app.editRecipeView.model.get('name'));
-		    	if (ga && app.editRecipeView.model.id) {
-				    ga('set', {
-					  page: '/#editRecipe/_'+app.genUrlName(app.editRecipeView.model.get('name'))+'-'+app.editRecipeView.model.id,
-					  title: app.editRecipeView.model.get('name')
-					});
-					ga('send', 'pageview');
-			    }
+		    	if (app.editRecipeView.model.id) {
+			    	app.google.analytics.pageview(app.editRecipeView.model.getRelativeEditUrl(), app.editRecipeView.model.get('name'));
+		    	}
 	    		break;
     	}
     },
-    createLabelgroup: function(newGroupName) {
-		var newGroup = new app.LabelGroup();
-    	newGroup.set('name', newGroupName);
-    	newGroup.set('weight', 10);
-        newGroup.set('user', app.loginedUser);
+} // app
 
-		var currentACL = newGroup.getACL();
-		if (typeof currentACL === 'undefined') {
-			currentACL = new Parse.ACL();
-		}
-		currentACL.setPublicReadAccess(true);
-		currentACL.setPublicWriteAccess(false);
-		currentACL.setWriteAccess(app.loginedUser.id, true);
-		newGroup.setACL(currentACL);
-		newGroup.save({
-        	success: function(newGroup) {
-        		var openedGroups = $.cookie('expandedLabelGroups'); 
-        		if (openedGroups) {
-	        		var openedGroups = openedGroups.split(',');
-					if(_.indexOf(openedGroups, newGroup.id)==-1) {
-						openedGroups.push(newGroup.id);
-						$.cookie('expandedLabelGroups', openedGroups);
-					}
-			        app.loadLabels(app.loginedUser);
-			        $(event.target).val('');
-        		}
-        	}
-        });
-        if (ga) { ga('send', {
-			'hitType'       : 'event',        // Required.
-			'eventCategory' : 'label',         // Required.
-			'eventAction'   : 'createLabelgroup', // Required.
-		});}
-    },
-    createNewLabel: function(newLabelName, group) {
-		var newLabel = new app.Label();
-        newLabel.set('name', newLabelName);
-        newLabel.set('labelgroup', group);
-        newLabel.set('user', app.loginedUser);
+// Models ==================================================================================================================
 
-		var currentACL = newLabel.getACL();
-		if (typeof currentACL === 'undefined') {
-			currentACL = new Parse.ACL();
-		}
-		currentACL.setPublicReadAccess(true);
-		currentACL.setPublicWriteAccess(false);
-		currentACL.setWriteAccess(app.loginedUser.id, true);
-		newLabel.setACL(currentACL)
-
-        newLabel.save({
-        	success: function() {
-		        app.loadLabels(app.loginedUser);
-        	}
-        });
-        if (ga) { ga('send', {
-			'hitType'       : 'event',        // Required.
-			'eventCategory' : 'label',         // Required.
-			'eventAction'   : 'createLabel', // Required.
-		});}
-    },
-    createNewRecipe: function() {
-    	var currentUser = Parse.User.current();
-    	newRecipe = new app.Recipe({
+	app.Recipe = Parse.Object.extend("Recipe", {
+		defaults:{
 			name          : '',
 			coverImageUrl : '',
 			description   : '',
 			ingredients   : '',
 			directions    : '',
-			user          : currentUser,
 			labels        : new Array(),
 			private       : false
-    	});
+	    },
+		validate: function(attrs) {
 
-    	app.editRecipe(newRecipe);
+		},
+		makeSearchMasks: function() {
+			var selectedLabels = this.get('labels');
+			var searchmaskLabels = '';
 
-    	if (ga) { ga('send', {
-			'hitType'       : 'event',        // Required.
-			'eventCategory' : 'recipe',         // Required.
-			'eventAction'   : 'create', // Required.
-		});}
-    },
-    cloneRecipe: function(orig) {
-    	var currentUser = Parse.User.current();
-    	var originalWriter = (orig.get('originalWriter'))?orig.get('originalWriter'):orig.get('user');
-    	newRecipe = new app.Recipe({
-			originalWriter: originalWriter,
-			name          : orig.get('name'),
-			coverImageUrl : orig.get('coverImageUrl'),
-			description   : orig.get('description'),
-			ingredients   : orig.get('ingredients'),
-			directions    : orig.get('directions'),
-			user          : currentUser,
-			labels        : new Array(),
-			private       : false
-    	});
-    	if (ga) { ga('send', {
-			'hitType'       : 'event',        // Required.
-			'eventCategory' : 'recipe',         // Required.
-			'eventAction'   : 'clone', // Required.
-		});}
-    	return newRecipe;
-    },
-    editRecipe: function(recipe) { 
-    	this.editRecipeView = new app.EditRecipeView({model: recipe});
-    	app.switchLayout('edit');
-    	if (ga) { ga('send', {
-			'hitType'       : 'event',        // Required.
-			'eventCategory' : 'recipe',         // Required.
-			'eventAction'   : 'edit', // Required.
-		});}
-    },
-    viewRecipe: function(recipe) {
-    	if (this.recipeView) {
-    		this.recipeView.close();
-    	}
-    	app.router.navigate( "/recipe/_"+app.genUrlName(recipe.get('name'))+"-"+recipe.id, { trigger: false } );
-    	window.document.title='Just Food You - '+recipe.get('name');
-    	this.recipeView = new app.RecipeView({model: recipe});
-    	app.switchLayout('view');
-    },
-    genSearchMask: function(text) {
-    	text = text.toLowerCase();
-    	// var re = /[^A-Za-z\u0590-\u05FF\u0600-\u06FF\u4E00–\u9FCC\u3400–\u4DB5\uFA0E\uFA0F\uFA11\uFA13\uFA14\uFA1F\uFA21\uFA23\uFA24\uFA27-\uFA29]|[\ud840-\ud868][\udc00-\udfff]|\ud869[\udc00-\uded6\udf00-\udfff]|[\ud86a-\ud86c][\udc00-\udfff]|\ud86d[\udc00-\udf34\udf40-\udfff]|\ud86e[\udc00-\udc1d\u0900-\u097F\ ]/g;
-    	var re = /[^A-Za-z\u0590-\u05FF\ ]/g;
-		return _.uniq(removeDiacritics(text).replace(re, '').replace(/(.)\1{1,}/g, '$1').replace(/\b[a-z]{1,2}\b/g, '').replace(/(.)\1{1,}/g, '$1').split(' '));
-	},
-	genUrlName: function(text) {
-		return removeDiacritics(text+' $2!₪%$#דשגד').replace(/[^A-Za-z\ ]/g,'').replace(/\ /g,'_');
-	},
-	renderRecipeList: function(recipeList) {
-		this.recipeListView = new app.RecipeListView({collection: recipeList});
-		this.recipeListView.render();
-	},
-	print: function(recipe) {
-		window.open('/print/#recipe/_'+app.genUrlName(recipe.get('name'))+'-'+recipe.id);
-	},
-	sendToKindle: function() {
-        window.readabilityToken = '';
-        var s = document.createElement('script');
-        s.setAttribute('type', 'text/javascript');
-        s.setAttribute('charset', 'UTF-8');
-        s.setAttribute('src', '//www.readability.com/bookmarklet/send-to-kindle.js');
-        document.documentElement.appendChild(s);
-        if (ga) { ga('send', {
-			'hitType'       : 'event',        // Required.
-			'eventCategory' : 'recipe',         // Required.
-			'eventAction'   : 'kindle', // Required.
-		});}
-	}
-}
+			for (var i = 0; i < selectedLabels.length; i++) {
+				searchmaskLabels += ' '+selectedLabels[i].get('name');
+			};
 
+			var textContens = '';
+        	textContens += app.utils.htmlToText(this.get('description'));	
+        	textContens += app.utils.htmlToText(this.get('ingredients'));	
+        	textContens += app.utils.htmlToText(this.get('directions'));	
+
+	    	var recipeLanguage = franc(textContens);
+
+			var searchMask = this.get('name')+searchmaskLabels+' '+textContens;
+			searchMask = app.utils.genSearchMask(searchMask);
+			var searchMaskStr = (searchMask.length)?searchMask.join("").substr(0,900):'';
+
+	    	this.set({ 
+				locale        : recipeLanguage,
+				searchMask    : searchMask,
+				searchMaskStr : searchMaskStr
+	    	})
+		},
+		uploadImage: function(imageFile, callback) {
+			var imageExts = {
+				"image/png":"png",
+				"image/jpg":"jpg",
+				"image/jpeg":"jpg"
+			}
+			var imgUrl = 'https://s3.amazonaws.com/'+s.amazonBucket+'/users/'+app.loginedUser.id+'/recipes/'+this.id+'/cover.'+imageExts[imageFile.type];
+			this.set('coverImageUrl',  imgUrl+'?' +new Date().getTime() );
+			this.save();
+			var filePath = 'users/'+app.loginedUser.id+'/recipes/'+this.id+'/cover';
+			Parse.Cloud.run('awsInfo', {file: filePath, fileType: imageFile.type}).then(function(result) {
+			    var fd = new FormData();
+
+			    fd.append('key', result.key);
+			    fd.append('acl', 'public-read');   
+			    fd.append('Content-Type', imageFile.type);
+			    fd.append('Cache-Control', 'max-age='+3600*24*7);     
+			    fd.append('AWSAccessKeyId', s.AWSAccessKeyId);
+			    fd.append('policy', result.policy)
+			    fd.append('signature', result.signature);
+			    fd.append("file", imageFile);
+
+			    var xhr = new XMLHttpRequest();
+
+			    // xhr.upload.addEventListener("progress", uploadProgress, false);
+			    xhr.addEventListener("load", callback, false);
+			    // xhr.addEventListener("error", uploadFailed, false);
+			    // xhr.addEventListener("abort", uploadCanceled, false);
+
+			    xhr.open('POST', 'https://'+s.amazonBucket+'.s3.amazonaws.com/', true); //MUST BE LAST LINE BEFORE YOU SEND 
+			    xhr.send(fd);
+			})
+		},
+		setPrivateAcl: function() {
+			var private = this.get('private');
+			var currentACL = this.getACL();
+			if (typeof currentACL === 'undefined') {
+				currentACL = new Parse.ACL();
+			}
+
+			currentACL.setPublicReadAccess(true);
+			currentACL.setPublicWriteAccess(false);
+
+			currentACL.setWriteAccess(app.loginedUser.id, true);
+			if(private) {
+				currentACL.setPublicReadAccess(false);
+				currentACL.setReadAccess(app.loginedUser.id, true);
+			}
+
+			this.setACL(currentACL);
+		},
+		getUrl: function() {
+			return app.settings.applicationUrl+this.getRelativeUrl();
+		},
+		getRelativeUrl: function() {
+			return '#recipe/_'+app.utils.genUrlName(this.get('name'))+'-'+this.id;
+		},
+		getEditUrl: function() {
+			return app.settings.applicationUrl+this.getRelativeEditUrl();
+		},
+		getRelativeEditUrl: function() {
+			return '#editRecipe/_'+app.utils.genUrlName(this.get('name'))+'-'+this.id;
+		}
+	}); // app.Recipe
+
+//  ==================================================================================================================
+	app.userManager = {
+		initNewUser: function() {
+	    	Parse.Cloud.run('initUser');
+	    	location.reload();
+	    },
+	    loadFavoritedRecipes: function() {
+	    	var relation = app.loginedUser.relation("favorites");
+			var qRecipe = relation.query();
+			qRecipe.find().then(function (list) {
+			    app.favoritedRecipes = new Parse.Collection(list, {model:app.Recipe});
+			}, function (error) {
+			    console.log(error);
+			});
+	    },
+	    loadFollowedUsers: function() {
+	    	var relation = app.loginedUser.relation("followedUsers");
+			var query = relation.query();
+	    	query.ascending('name');
+			query.find().then(function (list) {
+			    app.followedUsers = new Parse.Collection(list, {model:Parse.User});
+			    app.followedUsersView = new app.NavigationFollowedUsersView({collection:app.followedUsers});
+			    app.followedUsersView.render();
+			}, function (error) {
+			    console.log(error);
+			});
+	    },
+	    followUser: function(user) {
+			var relation = app.loginedUser.relation('followedUsers');
+			var followed = app.followedUsers.get(user.id);
+			if (followed) {
+				relation.remove(user);
+				app.google.analytics.sendEvent('user', 'user', 'unfollow');
+			}
+			else {
+				relation.add(user);
+				app.google.analytics.sendEvent('user', 'user', 'follow');
+			}
+			app.loginedUser.save().then( 
+				function() {
+					$('#FollowedPeoplePlaceholder').removeClass('hide');
+					app.userManager.loadFollowedUsers();
+				},
+				function(error) {
+			        console.log("Error: " + error.code + " " + error.message);
+			    });
+			return followed;
+	    }
+	} // app.userManager
+
+	app.recipeManager = {
+		toggleRecipeFavorite: function(recipe) {
+			var favorited = (app.favoritedRecipes.get(recipe.id))?true:false;
+			var favoritesRelation = app.loginedUser.relation('favorites');
+			if (favorited) {
+				favoritesRelation.remove(recipe);
+				app.google.analytics.sendEvent('user', 'recipe', 'unfavorite');
+			}
+			else {
+				favoritesRelation.add(recipe);
+				app.google.analytics.sendEvent('user', 'recipe', 'favorite');
+			}
+			app.loginedUser.save().then( 
+				function() {
+					app.userManager.loadFavoritedRecipes();
+				},
+				function(error) {
+			        console.log("Error: " + error.code + " " + error.message);
+			    });
+			return favorited;
+	    },
+	    createNewRecipe: function() {
+	    	var currentUser = Parse.User.current();
+	    	newRecipe = new app.Recipe({
+				name          : '',
+				coverImageUrl : '',
+				description   : '',
+				ingredients   : '',
+				directions    : '',
+				user          : currentUser,
+				labels        : new Array(),
+				private       : false
+	    	});
+
+	    	this.editRecipe(newRecipe);
+			app.google.analytics.sendEvent('recipe', 'create', 'create');
+	    },
+	    cloneRecipe: function(orig) {
+	    	var currentUser = Parse.User.current();
+	    	var originalWriter = (orig.get('originalWriter'))?orig.get('originalWriter'):orig.get('user');
+	    	newRecipe = new app.Recipe({
+				originalWriter: originalWriter,
+				name          : orig.get('name'),
+				coverImageUrl : orig.get('coverImageUrl'),
+				description   : orig.get('description'),
+				ingredients   : orig.get('ingredients'),
+				directions    : orig.get('directions'),
+				user          : currentUser,
+				labels        : new Array(),
+				private       : false
+	    	});
+	    	app.google.analytics.sendEvent('recipe', 'clone', 'clone');
+	    	return newRecipe;
+	    },
+	    editRecipe: function(recipe) { 
+	    	app.editRecipeView = new app.EditRecipeView({model: recipe});
+	    	app.switchLayout('edit');
+	    	app.google.analytics.sendEvent('recipe', 'edit', 'edit');
+	    },
+	    viewRecipe: function(recipe) {
+	    	if (this.recipeView) {
+	    		this.recipeView.close();
+	    	}
+	    	app.router.navigate(recipe.getRelativeUrl(), { trigger: false } );
+	    	window.document.title='Just Food You - '+recipe.get('name');
+	    	app.recipeView = new app.RecipeView({model: recipe});
+	    	app.switchLayout('view');
+	    },
+		renderRecipeList: function(recipeList) {
+			app.recipeListView = new app.RecipeListView({collection: recipeList});
+			app.recipeListView.render();
+		},
+		print: function(recipe) {
+			window.open('/print/#recipe/_'+app.genUrlName(recipe.get('name'))+'-'+recipe.id);
+		},
+		sendToKindle: function() {
+	        window.readabilityToken = '';
+	        var s = document.createElement('script');
+	        s.setAttribute('type', 'text/javascript');
+	        s.setAttribute('charset', 'UTF-8');
+	        s.setAttribute('src', '//www.readability.com/bookmarklet/send-to-kindle.js');
+	        document.documentElement.appendChild(s);
+	        app.google.analytics.sendEvent('recipe', 'sendToKindle', 'sendToKindle');
+		}
+	} // app.recipeManager
+
+	app.labelManager = {
+		loadLabels: function(filterUser) {
+	    	var labelGroupQuery = new Parse.Query(app.LabelGroup);
+			labelGroupQuery.equalTo("user", filterUser);
+			labelGroupQuery.ascending('weight');
+			labelGroupQuery.find({
+				success: function(labelgroups) {
+					app.labelGroupCollection = new Parse.Collection(labelgroups, {model: app.LabelGroup});
+					
+					if (app.loginedUser && labelgroups.length && ( labelgroups[0].get('user').id == app.loginedUser.id  )) {
+						app.loginedUser.labelGroups = new Parse.Collection(labelgroups, {model: app.LabelGroup});
+					}
+
+					var labelQuery = new Parse.Query(app.Label);
+		    		labelQuery.equalTo("user", filterUser);
+		    		labelQuery.descending('name');
+		    		labelQuery.find({
+		    			success: function(labels) {
+							$(app.NavigationLabelGroupView.prototype.el).empty(); //#LabelGroupsViewPlaceholder'
+		    				app.labelCollection = new Parse.Collection(labels, {model: app.Label});
+		    				var navigationLabelGroupView = new app.NavigationLabelGroupView({collection: app.labelGroupCollection});
+		    				app.recipesFiltermanager.set('labels',[]);
+
+		    				if (app.loginedUser && labels.length && ( labels[0].get('user').id == app.loginedUser.id  )) {
+								app.loginedUser.labelCollection = new Parse.Collection(labels, {model: app.Label});
+							}
+		    			}
+		    		});
+				}
+			});
+	    },
+	    createLabelgroup: function(newGroupName) {
+			var newGroup = new app.LabelGroup();
+	    	newGroup.set('name', newGroupName);
+	    	newGroup.set('weight', 10);
+	        newGroup.set('user', app.loginedUser);
+
+			var currentACL = newGroup.getACL();
+			if (typeof currentACL === 'undefined') {
+				currentACL = new Parse.ACL();
+			}
+			currentACL.setPublicReadAccess(true);
+			currentACL.setPublicWriteAccess(false);
+			currentACL.setWriteAccess(app.loginedUser.id, true);
+			newGroup.setACL(currentACL);
+			newGroup.save({
+	        	success: function(newGroup) {
+	        		var openedGroups = $.cookie('expandedLabelGroups'); 
+	        		if (openedGroups) {
+		        		var openedGroups = openedGroups.split(',');
+						if(_.indexOf(openedGroups, newGroup.id)==-1) {
+							openedGroups.push(newGroup.id);
+							$.cookie('expandedLabelGroups', openedGroups);
+						}
+				        app.labelManager.loadLabels(app.loginedUser);
+				        $(event.target).val('');
+	        		}
+	        	}
+	        });
+	        app.google.analytics.sendEvent('labelgroup', 'create', 'create');
+	    },
+	    createLabel: function(newLabelName, group) {
+			var newLabel = new app.Label();
+	        newLabel.set('name', newLabelName);
+	        newLabel.set('labelgroup', group);
+	        newLabel.set('user', app.loginedUser);
+
+			var currentACL = newLabel.getACL();
+			if (typeof currentACL === 'undefined') {
+				currentACL = new Parse.ACL();
+			}
+			currentACL.setPublicReadAccess(true);
+			currentACL.setPublicWriteAccess(false);
+			currentACL.setWriteAccess(app.loginedUser.id, true);
+			newLabel.setACL(currentACL)
+
+	        newLabel.save({
+	        	success: function() {
+			        app.labelManager.loadLabels(app.loginedUser);
+	        	}
+	        });
+	        app.google.analytics.sendEvent('label', 'create', 'create');
+	    },
+	    deleteLabel: function(label) {
+	    	app.google.analytics.sendEvent('label', 'delete', label.get('name'));
+			label.destroy({
+				success: function() {
+					app.labelManager.loadLabels(app.loginedUser);
+				}
+			});
+	    }
+	} // app.labelManager
 
 // Filter Manager ==========================================================================================================
 
@@ -638,7 +575,7 @@ var s, app = {
 	    },
 	    validate: function(attrs) {
 	    	if ( _.has(attrs,"user") ) {
-				app.loadLabels(attrs.user);
+				app.labelManager.loadLabels(attrs.user);
 				
 				this.set('favorites', false);
 				this.set('text','');
@@ -665,7 +602,7 @@ var s, app = {
 					else {
 	 					user.id ='BoInDweJu3';
 					}
-					app.loadLabels(user);
+					app.labelManager.loadLabels(user);
 				}
 			}
 	  	},
@@ -738,7 +675,7 @@ var s, app = {
 		    	$('.app-navigation').find('.cmdListFavoritedRecipes i').removeClass('mdl-color-text--light-green-900');
 				var relation = app.loginedUser.relation("favorites");
 				this.qRecipe = relation.query();
-				if (ga) { ga('send', 'pageview', '/favorites') }
+				app.google.analytics.pageview('/favorites', 'Favorites');
 			}
 			else {
 				// keywords
@@ -803,7 +740,7 @@ var s, app = {
 			    	$('.app-navigation').find('.cmdListAllRecipes i').removeClass('mdl-color-text--light-green-900');					
 				}
 			}
-			if (ga) { ga('send', 'pageview', '/search?q='+gaKeywords); }
+			app.google.analytics.pageview('/search?q='+gaKeywords, 'Search');
 
 			// order by
 			if ( this.get('orderBy') ) {
@@ -836,11 +773,11 @@ var s, app = {
 				$('main').scrollTop(0);
 			    // use list
 			    app.listedRecipes = new Parse.Collection(list, {model:app.Recipe});
-			    app.renderRecipeList(app.listedRecipes);
+			    app.recipeManager.renderRecipeList(app.listedRecipes);
 			    app.spinnerStop();
 			    if(list.length) {
 			    	if(list.length == 1) {
-			    		app.viewRecipe(list[0]);
+			    		app.recipeManager.viewRecipe(list[0]);
 			    		app.switchLayout('view');
 			    	}
 			    	else {
@@ -851,7 +788,7 @@ var s, app = {
 			    console.log(error);
 			});
 	    },
-	});
+	}); // app.RecipesFiltermanager
 
 // Router ==================================================================================================================
 
@@ -883,7 +820,7 @@ var s, app = {
 			rQuery.include('user');
 			rQuery.include('originalWriter');
 			rQuery.find().then(function (list) {
-				app.viewRecipe(list[0]);
+				app.recipeManager.viewRecipe(list[0]);
 				app.switchLayout('view');
 			})
 		},
@@ -977,40 +914,17 @@ var s, app = {
 			app.chanegLocale($(event.target).attr('data'))
 		},
 		facebookLogin: function(e){
-            Parse.FacebookUtils.logIn("public_profile,email,user_birthday,user_hometown,user_location,publish_actions,user_likes", {
-				success: function(user) {
-				    if (!user.existed()) {
-				      // alert("User signed up and logged in through Facebook!");
-				      	if (ga) { ga('send', {
-							'hitType'       : 'event',        // Required.
-							'eventCategory' : 'user',         // Required.
-							'eventAction'   : 'register',     // Required.
-							'event}Label'    : 'registration by facebook'
-						});}
-				    } 
-				    else {
-				        // alert("User logged in through Facebook!");
-				      	if (ga) { ga('send', {
-							'hitType'       : 'event',        // Required.
-							'eventCategory' : 'user',         // Required.
-							'eventAction'   : 'login',        // Required.
-							'event}Label'    : 'login by facebook'
-						});}
-				    }
-				    app.setFacebookUser();
-				},
-				error: function(user, error) {
-					// alert("User cancelled the Facebook login or did not fully authorize.");
-				}
-            });
+            app.facebook.login();
 		},
 		logout: function(e) {
+			app.google.analytics.sendEvent('user', 'logout', 'logout');
 			Parse.User.logOut();
 			location.reload();
 		},
 		onGoProfile: function(event) {
 			if(app.recipesFiltermanager.get('user')) {
 				if (app.recipesFiltermanager.get('user').get('profileLink')) {
+					app.google.analytics.sendEvent('user', 'facebookProfile', 'show facebook profile');
 					window.open(app.recipesFiltermanager.get('user').get('profileLink'));
 				}
 			}
@@ -1018,7 +932,7 @@ var s, app = {
 		onAddFavorite: function(event) {
 			if (app.loginedUser) {
 				if(app.currentLayout=='view') {
-					var followed = app.toggleRecipeFavorite(app.recipeView.model);
+					var followed = app.recipeManager.toggleRecipeFavorite(app.recipeView.model);
 					if (followed) {
 						$('header .add-favorite i').text('favorite_border');
 					}
@@ -1028,7 +942,7 @@ var s, app = {
 				}
 				else {
 					if(app.recipesFiltermanager.get('user')) {
-						var followed = app.followUser(app.recipesFiltermanager.get('user'));
+						var followed = app.userManager.followUser(app.recipesFiltermanager.get('user'));
 						if (followed) {
 							$('header .add-favorite i').text('favorite_border');
 						}
@@ -1055,14 +969,13 @@ var s, app = {
 			if(event.keyCode == 13) {
 		        // app create new group
 		        var newGroupName = $(event.target).val();
-		        var newGroup = new app.LabelGroup();
-		        app.createLabelgroup(newGroupName);
+		        app.labelManager.createLabelgroup(newGroupName);
 		        $(event.target).val('');
 		    }
 		},
 		createRecipe: function(event) {
 			if (app.loginedUser) {
-				app.createNewRecipe();
+				app.recipeManager.createNewRecipe();
 			}
 			else {
 				app.applicationView.facebookLogin(event);
@@ -1125,21 +1038,18 @@ var s, app = {
 			return false;
 		}
 
-	});
+	}); // app.ApplicationView
 
 	app.RecipesFiltermanagerView = Backbone.View.extend({
 		initialize: function() {
-			// this.template = _.template(underi18n.template(app.templates.viewRecipe, app.localeDict));
 			this.listenTo(this.model, 'change', this.render);
-		    // this.render();
 		},
 		render: function() {
 			return this;
 		}
-	});
+	}); //app.RecipesFiltermanagerView
 
 	app.RecipeView = Backbone.View.extend({
-		// el       : '#viewRecipePlaceholder',
 		events : {
 			'click .btnEdit'        : 'onEdit',
 			'click .btnClone'       : 'onClone',
@@ -1179,28 +1089,29 @@ var s, app = {
 				}
 			};
 
-			FB.XFBML.parse(this.el);
+			// 
+			try {FB.XFBML.parse(this.el);} catch (e) {}
 			(adsbygoogle = window.adsbygoogle || []).push({});
 			return this;
 		},
 		onPrint: function() {
-			app.print(this.model);
+			app.recipeManager.print(this.model);
 		},
 		onKindle: function() {
-			app.sendToKindle();
+			app.recipeManager.sendToKindle();
 		},
 		onAuthor: function() {
-			app.router.navigate("/u/"+app.genUrlName(this.model.get('user').get('name'))+"-"+this.model.get('user').id, {trigger: true});
+			app.router.navigate(this.model.get('user').getRelativeUrl(), {trigger: true});
 		},
 		onOriginalWriter: function() {
-			app.router.navigate("/u/"+app.genUrlName(this.model.get('originalWriter').get('name'))+"-"+this.model.get('originalWriter').id, {trigger: true});
+			app.router.navigate(this.model.get('originalWriter').getRelativeUrl(), {trigger: true});
 		},
 		onEdit: function() {
-			app.editRecipe(this.model);
+			app.recipeManager.editRecipe(this.model);
 		},
 		onToggleFavorite: function(event) {
 			if(app.loginedUser) {
-				if (app.toggleRecipeFavorite(this.model)) {
+				if (app.recipeManager.toggleRecipeFavorite(this.model)) {
 					this.$el.find('.add-favorite i').text('favorite_border');
 				}
 				else {
@@ -1213,7 +1124,7 @@ var s, app = {
 		},
 		onClone: function(event) {
 			if(app.loginedUser) {
-				app.editRecipe(app.cloneRecipe(this.model));
+				app.recipeManager.editRecipe(app.recipeManager.cloneRecipe(this.model));
 				this.close();
 			}
 			else {
@@ -1230,11 +1141,11 @@ var s, app = {
 			delete this;
 		},
 		onShare: function(event) {
-			app.shareToFacebook(this.model);
+			app.facebook.shareRecipe(this.model);
 			return true;
 		}
 		
-	});
+	}); // app.RecipeView
 
 	app.EditRecipeView = Backbone.View.extend({
 		events   : {
@@ -1358,37 +1269,29 @@ var s, app = {
 		onSave: function(evt) {
 			app.spinnerStart();
 
+			if (!this.model.id) {
+				isNewRecipe = true;
+			}
+			else {
+				isNewRecipe = false;
+			}
+			postToFacebook = $('#switch-postfacebok')[0].checked;
+
 			var selectedLabels = [];
 			for (var i = this.labelSelectors.length - 1; i >= 0; i--) {
 				selectedLabels = _.union(selectedLabels, this.labelSelectors[i].selectedLabels);
 			};
-			var searchmaskLabels = '';
-			for (var i = 0; i < selectedLabels.length; i++) {
-				searchmaskLabels += ' '+selectedLabels[i].get('name')
-			};
-
-			var text = $('#editRecipe .ingredients').text()+' '+$('#editRecipe .description').text()+' '+$('#editRecipe .directions').text();
-			var div = document.createElement("div");
-			div.innerHTML = text;
-			text = div.textContent || div.innerText || "";
-
-			var searchMask = this.model.get('name')+searchmaskLabels+' '+text;
-			this.model.set('searchMask', app.genSearchMask(searchMask));
-			this.model.set('searchMaskStr', this.model.get('searchMask').join("").substr(0,900) );
-
-			this.model.set('description', $('#editRecipe .description').html());
-			this.model.set('ingredients', $('#editRecipe .ingredients').html());
-			this.model.set('directions', $('#editRecipe .directions').html());
-			
-
-			var recipeLanguage = franc(text);
-			this.model.set('locale', recipeLanguage);
-			this.model.set('labels', selectedLabels);
-			// this.model.set('user', app.loginedUser);
-			this.model.set('private', $('#switch-private')[0].checked);
-			
-
-			// this.model.save();
+			this.model.set({ 
+				labels      : selectedLabels,
+				description : $('#editRecipe .description').html(),
+				ingredients : $('#editRecipe .ingredients').html(),
+				directions  : $('#editRecipe .directions').html(),
+				private     : $('#switch-private')[0].checked
+			}, { validate: true }  );
+			this.model.makeSearchMasks();
+			this.model.setPrivateAcl();
+ 
+			app.google.analytics.sendEvent('recipe', 'save', 'save');
 			Parse.Object.saveAll(this.model).then(function(model) {
 				var labels = model.get('labels'); 
 				var ids = [];
@@ -1402,112 +1305,69 @@ var s, app = {
 				}
 				model.set('labelsId', ids);
 
-				var currentACL = model.getACL();
-				if (typeof currentACL === 'undefined') {
-					currentACL = new Parse.ACL();
-				}
-				currentACL.setPublicReadAccess(true);
-				currentACL.setPublicWriteAccess(false);
-				currentACL.setWriteAccess(app.loginedUser.id, true);
-				if(model.get('private')) {
-					currentACL.setPublicReadAccess(false);
-					currentACL.setReadAccess(app.loginedUser.id, true);
-				}
-				model.setACL(currentACL)
-
 				//image
 				var imageFile = document.getElementById('image_upload');
 				if (imageFile && imageFile.files.length) {
 					imageFile = imageFile.files[0];
-					var imageExts = {
-					  "image/png":"png",
-					  "image/jpg":"jpg",
-					  "image/jpeg":"jpg"
-					}
-					var imgUrl = 'https://s3.amazonaws.com/'+s.amazonBucket+'/users/'+app.loginedUser.id+'/recipes/'+model.id+'/cover.'+imageExts[imageFile.type];
-					model.set('coverImageUrl',  imgUrl+'?' +new Date().getTime() );
-					model.save();
-			        Parse.Cloud.run('awsInfo', {file: 'users/'+app.loginedUser.id+'/recipes/'+model.id+'/cover', fileType: imageFile.type}, {
-			  			success: function(result) {
-							// console.log(result)
-							$('[name=Policy]').val(result.policy);
-							$('[name=Signature]').val(result.signature);
+					model.uploadImage(imageFile, function() {
+				    	// console.log('img uploaded');
+				    	var imageTags = $('.recipe-'+app.editRecipeView.model.id+' .image');
+				    	if (imageTags && imageTags.length && imageTags[0].src) {
+					    	$(imageTags).attr('src', imageTags[0].src +'?' +new Date().getTime());
+				    	}
 
-							var file = document.getElementById('image_upload').files[0];
-						    var fd = new FormData();
+				    	app.editRecipeView.model.get('user').fetch();
+				    	app.labelManager.loadLabels(app.loginedUser);
+					    app.spinnerStop();
+						app.recipeManager.viewRecipe(app.editRecipeView.model);
+						if (app.recipeListView) {
+							app.recipeListView.trigger('change');
+						}
+						app.google.analytics.sendEvent('recipe', 'uploadImage', 'uploadImage');
 
-						    fd.append('key', result.key);
-						    fd.append('acl', 'public-read');   
-						    fd.append('Content-Type', file.type);
-						    fd.append('Cache-Control', 'max-age='+3600*24*7);     
-						    fd.append('AWSAccessKeyId', s.AWSAccessKeyId);
-						    fd.append('policy', result.policy)
-						    fd.append('signature', result.signature);
+						if (isNewRecipe) {
+							// app.facebook.postRecipe(app.editRecipeView.model)
+						}
+						isNewRecipe = false;
+						
+						if (postToFacebook) {
+							app.facebook.postRecipe(app.editRecipeView.model)
+						}
+						postToFacebook = false;
 
-						    fd.append("file",file);
-
-						    var xhr = new XMLHttpRequest();
-
-						    // xhr.upload.addEventListener("progress", uploadProgress, false);
-						    xhr.addEventListener("load", function() {
-						    	// console.log('img uploaded');
-						    	var imageTags = $('.recipe-'+app.editRecipeView.model.id+' .image');
-						    	if (imageTags && imageTags.length && imageTags[0].src) {
-							    	$(imageTags).attr('src', imageTags[0].src +'?' +new Date().getTime());
-						    	}
-
-						    	app.editRecipeView.model.get('user').fetch();
-						    	app.loadLabels(app.loginedUser);
-							    app.spinnerStop();
-								app.viewRecipe(app.editRecipeView.model);
-								app.editRecipeView.close();
-								if (app.recipeListView) {
-									app.recipeListView.trigger('change');
-								}
-								if (ga) { ga('send', {
-									'hitType'       : 'event',        // Required.
-									'eventCategory' : 'recipe',         // Required.
-									'eventAction'   : 'uploadImage', // Required.
-								});}
-						    }, false);
-						    // xhr.addEventListener("error", uploadFailed, false);
-						    // xhr.addEventListener("abort", uploadCanceled, false);
-
-						    xhr.open('POST', 'https://'+s.amazonBucket+'.s3.amazonaws.com/', true); //MUST BE LAST LINE BEFORE YOU SEND 
-						    xhr.send(fd);
-							// app.editRecipeView.model.save();
-							
-			  			},
-			  			error: function(error) {
-			  				console.log(error);
-			  			}
-					});
-				}
-				//end image
+						app.editRecipeView.close();
+				    })
+				} //end image upload
 				else {
 					model.save();
+
 					model.get('user').fetch();
-					app.loadLabels(app.loginedUser);
+					app.labelManager.loadLabels(app.loginedUser);
+					app.recipeManager.viewRecipe(app.editRecipeView.model);
 					app.spinnerStop();
-					app.viewRecipe(app.editRecipeView.model);
-					app.editRecipeView.close();
+
+					if (isNewRecipe) {
+						// app.facebook.postRecipe(app.editRecipeView.model)
+					}
+					isNewRecipe = false;
+
+					if (postToFacebook) {
+						app.facebook.postRecipe(app.editRecipeView.model)	
+					}
+					postToFacebook = false;
+					
 					if (app.recipeListView) {
 						app.recipeListView.trigger('change');
 					}
+					app.editRecipeView.close();
 				}
-				if (ga) { ga('send', {
-					'hitType'       : 'event',        // Required.
-					'eventCategory' : 'recipe',         // Required.
-					'eventAction'   : 'save', // Required.
-				});}
 			})
-
-			// this.close();
 		},
 		onDiscard:function() {
 			$('.mdl-layout__header-row .recipeName').text('');
+			app.google.analytics.sendEvent('recipe', 'close', 'close');
 			if(this.model.id) {
-				app.viewRecipe(this.model);			
+				app.recipeManager.viewRecipe(this.model);			
 			}
 			else {
 				app.switchLayout('list');
@@ -1525,14 +1385,10 @@ var s, app = {
 					console.log('deleted:'+result);
 				}
 			});
-			if (ga) { ga('send', {
-				'hitType'       : 'event',  // Required.
-				'eventCategory' : 'recipe', // Required.
-				'eventAction'   : 'delete', // Required.
-			});}
+			app.google.analytics.sendEvent('recipe', 'delete', 'delete');
 			app.editRecipeView.close();
 		}
-	})
+	}) // app.EditRecipeView
 
 	app.RecipeListItemView = Backbone.View.extend({
 		tagName   : 'div',
@@ -1569,25 +1425,25 @@ var s, app = {
 			return this;
 		},
 		onPrint: function() {
-			app.print(this.model);
+			app.recipeManager.print(this.model);
 		},
 		onRead: function(e) {
-			app.viewRecipe(this.model);
+			app.recipeManager.viewRecipe(this.model);
 		},
 		onClone: function(event) {
 			if(app.loginedUser) {
-				app.editRecipe(app.cloneRecipe(this.model));
+				app.recipeManager.editRecipe(app.recipeManager.cloneRecipe(this.model));
 			}
 			else {
 				app.applicationView.facebookLogin(event);
 			}
 		},
 		onAuthor: function() {
-			app.router.navigate("/u/"+app.genUrlName(this.model.get('user').get('name'))+"-"+this.model.get('user').id, {trigger: true});
+			app.router.navigate(this.model.get('user').getRelativeUrl(), {trigger: true});
 		},
 		onToggleFavorite: function(event) {
 			if(app.loginedUser) {
-				if (app.toggleRecipeFavorite(this.model)) {
+				if (app.recipeManager.toggleRecipeFavorite(this.model)) {
 					this.$el.find('.add-favorite i').text('favorite_border');
 				}
 				else {
@@ -1599,10 +1455,10 @@ var s, app = {
 			}
 		},
 		onShare: function(event) {
-			app.shareToFacebook(this.model);
+			app.facebook.shareRecipe(this.model);
 			return true;
 		}
-	});
+	}); // app.RecipeListItemView
 
 	app.RecipeListView = Backbone.View.extend({
 		el: '#recipeResultsList',
@@ -1629,7 +1485,7 @@ var s, app = {
 					$list.append('<div class="clearfix visible-lg-block"></div>');
 				}
 		    }, this);
-			FB.XFBML.parse(this.el);
+			try {FB.XFBML.parse(this.el);} catch (e) {}
 			return this;
 		},
 		renderAd: function() {
@@ -1641,7 +1497,7 @@ var s, app = {
 			this.$el.append( item.render().el );
 			return this;
 		}
-	});
+	}); // app.RecipeListView
 
 	app.NavigationLabelView = Backbone.View.extend({
 		tagName : 'a',
@@ -1664,26 +1520,18 @@ var s, app = {
 			app.recipesFiltermanager.toggleLabel(this.model);
 			app.switchLayout('list');
 			app.recipesFiltermanager.search();
-			if (ga) { ga('send', {
-				'hitType'       : 'event',  // Required.
-				'eventCategory' : 'label',  // Required.
-				'eventAction'   : 'toggle', // Required.
-			});}
+			app.google.analytics.sendEvent('label', 'toggle', this.model.get('name'));
 		},
 		onDelete: function(e) {
+			app.google.analytics.sendEvent('label', 'delete', this.model.get('name'));
 			this.model.destroy({
 				success: function() {
-					app.loadLabels(app.loginedUser);
+					app.labelManager.loadLabels(app.loginedUser);
 				}
 			});
-			if (ga) { ga('send', {
-				'hitType'       : 'event',        // Required.
-				'eventCategory' : 'label',         // Required.
-				'eventAction'   : 'delete', // Required.
-			});}
 			this.close();
 		}
-	});
+	}); // app.NavigationLabelView
 
 	app.NavigationFollowedUserItemView = Backbone.View.extend({
 		tagName : 'a',
@@ -1707,7 +1555,7 @@ var s, app = {
 			app.recipesFiltermanager.search();
 			app.switchLayout('list');
 		}
-	});
+	}); // app.NavigationFollowedUserItemView
 
 	app.NavigationFollowedUsersView = Backbone.View.extend({
 		el: '#FollowedPeoplePlaceholder',
@@ -1727,7 +1575,7 @@ var s, app = {
 
 			return this;
 		}
-	});
+	}); // app.NavigationFollowedUsersView
 
 	app.NavigationLabelGroupItemView = Backbone.View.extend({
 		tagName: 'div',
@@ -1796,27 +1644,23 @@ var s, app = {
 			return this;
 		},
 		onDelete: function() {
+			app.google.analytics.sendEvent('labelgroup', 'delete', this.model.get('name'));
 			this.model.destroy({
 				success: function() {
-					app.loadLabels(app.loginedUser);
+					app.labelManager.loadLabels(app.loginedUser);
 				}
 			});
-			if (ga) { ga('send', {
-				'hitType'       : 'event',        // Required.
-				'eventCategory' : 'label',         // Required.
-				'eventAction'   : 'deleteGroup', // Required.
-			});}
 			this.close();
 		},
 		onCreateLabel: function(event) {
 			if(event.keyCode == 13) {
 		        // app create new group
 		        var newLabelName = $(event.target).val();
-		        app.createNewLabel(newLabelName, this.model);
+		        app.labelManager.createLabel(newLabelName, this.model);
 		        $(event.target).val('');
 		    }
 		}
-	});
+	}); // app.NavigationLabelGroupItemView
 
 	app.NavigationLabelGroupView = Backbone.View.extend({
 		el: '#LabelGroupsViewPlaceholder',
@@ -1833,7 +1677,7 @@ var s, app = {
 
 			return this;
 		}
-	})
+	}) // app.NavigationLabelGroupView
 
 
 
@@ -1962,103 +1806,276 @@ var s, app = {
 			'CreateLabelGroup'        :'Erstellung einer Taggruppe',
 			'CreateLabel'             :'Erstellung eines Tags'
 		}
-
 	};
+// App Utils ==================================================================================================================
+	app.utils = {
+		htmlToText: function(html) {
+			var div = document.createElement("div");
+			div.innerHTML = html;
+			return div.textContent || div.innerText || "";
+		},
+		genUrlName: function(text) {
+			return this.removeDiacritics(text+' $2!₪%$#דשגד').replace(/[^A-Za-z\ ]/g,'').replace(/\ /g,'_');
+		},
+		genSearchMask: function(text) {
+	    	text = text.toLowerCase();
+	    	// var re = /[^A-Za-z\u0590-\u05FF\u0600-\u06FF\u4E00–\u9FCC\u3400–\u4DB5\uFA0E\uFA0F\uFA11\uFA13\uFA14\uFA1F\uFA21\uFA23\uFA24\uFA27-\uFA29]|[\ud840-\ud868][\udc00-\udfff]|\ud869[\udc00-\uded6\udf00-\udfff]|[\ud86a-\ud86c][\udc00-\udfff]|\ud86d[\udc00-\udf34\udf40-\udfff]|\ud86e[\udc00-\udc1d\u0900-\u097F\ ]/g;
+	    	var re = /[^A-Za-z\u0590-\u05FF\ ]/g;
+			return _.uniq(this.removeDiacritics(text).replace(re, '').replace(/(.)\1{1,}/g, '$1').replace(/\b[a-z]{1,2}\b/g, '').replace(/(.)\1{1,}/g, '$1').split(' '));
+		},
+		removeDiacritics: function(str) {
+			var defaultDiacriticsRemovalMap = [
+				{'base':'A', 'letters':/[\u0041\u24B6\uFF21\u00C0\u00C1\u00C2\u1EA6\u1EA4\u1EAA\u1EA8\u00C3\u0100\u0102\u1EB0\u1EAE\u1EB4\u1EB2\u0226\u01E0\u00C4\u01DE\u1EA2\u00C5\u01FA\u01CD\u0200\u0202\u1EA0\u1EAC\u1EB6\u1E00\u0104\u023A\u2C6F]/g},
+				{'base':'AA','letters':/[\uA732]/g},
+				{'base':'AE','letters':/[\u00C6\u01FC\u01E2]/g},
+				{'base':'AO','letters':/[\uA734]/g},
+				{'base':'AU','letters':/[\uA736]/g},
+				{'base':'AV','letters':/[\uA738\uA73A]/g},
+				{'base':'AY','letters':/[\uA73C]/g},
+				{'base':'B', 'letters':/[\u0042\u24B7\uFF22\u1E02\u1E04\u1E06\u0243\u0182\u0181]/g},
+				{'base':'C', 'letters':/[\u0043\u24B8\uFF23\u0106\u0108\u010A\u010C\u00C7\u1E08\u0187\u023B\uA73E]/g},
+				{'base':'D', 'letters':/[\u0044\u24B9\uFF24\u1E0A\u010E\u1E0C\u1E10\u1E12\u1E0E\u0110\u018B\u018A\u0189\uA779]/g},
+				{'base':'DZ','letters':/[\u01F1\u01C4]/g},
+				{'base':'Dz','letters':/[\u01F2\u01C5]/g},
+				{'base':'E', 'letters':/[\u0045\u24BA\uFF25\u00C8\u00C9\u00CA\u1EC0\u1EBE\u1EC4\u1EC2\u1EBC\u0112\u1E14\u1E16\u0114\u0116\u00CB\u1EBA\u011A\u0204\u0206\u1EB8\u1EC6\u0228\u1E1C\u0118\u1E18\u1E1A\u0190\u018E]/g},
+				{'base':'F', 'letters':/[\u0046\u24BB\uFF26\u1E1E\u0191\uA77B]/g},
+				{'base':'G', 'letters':/[\u0047\u24BC\uFF27\u01F4\u011C\u1E20\u011E\u0120\u01E6\u0122\u01E4\u0193\uA7A0\uA77D\uA77E]/g},
+				{'base':'H', 'letters':/[\u0048\u24BD\uFF28\u0124\u1E22\u1E26\u021E\u1E24\u1E28\u1E2A\u0126\u2C67\u2C75\uA78D]/g},
+				{'base':'I', 'letters':/[\u0049\u24BE\uFF29\u00CC\u00CD\u00CE\u0128\u012A\u012C\u0130\u00CF\u1E2E\u1EC8\u01CF\u0208\u020A\u1ECA\u012E\u1E2C\u0197]/g},
+				{'base':'J', 'letters':/[\u004A\u24BF\uFF2A\u0134\u0248]/g},
+				{'base':'K', 'letters':/[\u004B\u24C0\uFF2B\u1E30\u01E8\u1E32\u0136\u1E34\u0198\u2C69\uA740\uA742\uA744\uA7A2]/g},
+				{'base':'L', 'letters':/[\u004C\u24C1\uFF2C\u013F\u0139\u013D\u1E36\u1E38\u013B\u1E3C\u1E3A\u0141\u023D\u2C62\u2C60\uA748\uA746\uA780]/g},
+				{'base':'LJ','letters':/[\u01C7]/g},
+				{'base':'Lj','letters':/[\u01C8]/g},
+				{'base':'M', 'letters':/[\u004D\u24C2\uFF2D\u1E3E\u1E40\u1E42\u2C6E\u019C]/g},
+				{'base':'N', 'letters':/[\u004E\u24C3\uFF2E\u01F8\u0143\u00D1\u1E44\u0147\u1E46\u0145\u1E4A\u1E48\u0220\u019D\uA790\uA7A4]/g},
+				{'base':'NJ','letters':/[\u01CA]/g},
+				{'base':'Nj','letters':/[\u01CB]/g},
+				{'base':'O', 'letters':/[\u004F\u24C4\uFF2F\u00D2\u00D3\u00D4\u1ED2\u1ED0\u1ED6\u1ED4\u00D5\u1E4C\u022C\u1E4E\u014C\u1E50\u1E52\u014E\u022E\u0230\u00D6\u022A\u1ECE\u0150\u01D1\u020C\u020E\u01A0\u1EDC\u1EDA\u1EE0\u1EDE\u1EE2\u1ECC\u1ED8\u01EA\u01EC\u00D8\u01FE\u0186\u019F\uA74A\uA74C]/g},
+				{'base':'OI','letters':/[\u01A2]/g},
+				{'base':'OO','letters':/[\uA74E]/g},
+				{'base':'OU','letters':/[\u0222]/g},
+				{'base':'P', 'letters':/[\u0050\u24C5\uFF30\u1E54\u1E56\u01A4\u2C63\uA750\uA752\uA754]/g},
+				{'base':'Q', 'letters':/[\u0051\u24C6\uFF31\uA756\uA758\u024A]/g},
+				{'base':'R', 'letters':/[\u0052\u24C7\uFF32\u0154\u1E58\u0158\u0210\u0212\u1E5A\u1E5C\u0156\u1E5E\u024C\u2C64\uA75A\uA7A6\uA782]/g},
+				{'base':'S', 'letters':/[\u0053\u24C8\uFF33\u1E9E\u015A\u1E64\u015C\u1E60\u0160\u1E66\u1E62\u1E68\u0218\u015E\u2C7E\uA7A8\uA784]/g},
+				{'base':'T', 'letters':/[\u0054\u24C9\uFF34\u1E6A\u0164\u1E6C\u021A\u0162\u1E70\u1E6E\u0166\u01AC\u01AE\u023E\uA786]/g},
+				{'base':'TZ','letters':/[\uA728]/g},
+				{'base':'U', 'letters':/[\u0055\u24CA\uFF35\u00D9\u00DA\u00DB\u0168\u1E78\u016A\u1E7A\u016C\u00DC\u01DB\u01D7\u01D5\u01D9\u1EE6\u016E\u0170\u01D3\u0214\u0216\u01AF\u1EEA\u1EE8\u1EEE\u1EEC\u1EF0\u1EE4\u1E72\u0172\u1E76\u1E74\u0244]/g},
+				{'base':'V', 'letters':/[\u0056\u24CB\uFF36\u1E7C\u1E7E\u01B2\uA75E\u0245]/g},
+				{'base':'VY','letters':/[\uA760]/g},
+				{'base':'W', 'letters':/[\u0057\u24CC\uFF37\u1E80\u1E82\u0174\u1E86\u1E84\u1E88\u2C72]/g},
+				{'base':'X', 'letters':/[\u0058\u24CD\uFF38\u1E8A\u1E8C]/g},
+				{'base':'Y', 'letters':/[\u0059\u24CE\uFF39\u1EF2\u00DD\u0176\u1EF8\u0232\u1E8E\u0178\u1EF6\u1EF4\u01B3\u024E\u1EFE]/g},
+				{'base':'Z', 'letters':/[\u005A\u24CF\uFF3A\u0179\u1E90\u017B\u017D\u1E92\u1E94\u01B5\u0224\u2C7F\u2C6B\uA762]/g},
+				{'base':'a', 'letters':/[\u0061\u24D0\uFF41\u1E9A\u00E0\u00E1\u00E2\u1EA7\u1EA5\u1EAB\u1EA9\u00E3\u0101\u0103\u1EB1\u1EAF\u1EB5\u1EB3\u0227\u01E1\u00E4\u01DF\u1EA3\u00E5\u01FB\u01CE\u0201\u0203\u1EA1\u1EAD\u1EB7\u1E01\u0105\u2C65\u0250]/g},
+				{'base':'aa','letters':/[\uA733]/g},
+				{'base':'ae','letters':/[\u00E6\u01FD\u01E3]/g},
+				{'base':'ao','letters':/[\uA735]/g},
+				{'base':'au','letters':/[\uA737]/g},
+				{'base':'av','letters':/[\uA739\uA73B]/g},
+				{'base':'ay','letters':/[\uA73D]/g},
+				{'base':'b', 'letters':/[\u0062\u24D1\uFF42\u1E03\u1E05\u1E07\u0180\u0183\u0253]/g},
+				{'base':'c', 'letters':/[\u0063\u24D2\uFF43\u0107\u0109\u010B\u010D\u00E7\u1E09\u0188\u023C\uA73F\u2184]/g},
+				{'base':'d', 'letters':/[\u0064\u24D3\uFF44\u1E0B\u010F\u1E0D\u1E11\u1E13\u1E0F\u0111\u018C\u0256\u0257\uA77A]/g},
+				{'base':'dz','letters':/[\u01F3\u01C6]/g},
+				{'base':'e', 'letters':/[\u0065\u24D4\uFF45\u00E8\u00E9\u00EA\u1EC1\u1EBF\u1EC5\u1EC3\u1EBD\u0113\u1E15\u1E17\u0115\u0117\u00EB\u1EBB\u011B\u0205\u0207\u1EB9\u1EC7\u0229\u1E1D\u0119\u1E19\u1E1B\u0247\u025B\u01DD]/g},
+				{'base':'f', 'letters':/[\u0066\u24D5\uFF46\u1E1F\u0192\uA77C]/g},
+				{'base':'g', 'letters':/[\u0067\u24D6\uFF47\u01F5\u011D\u1E21\u011F\u0121\u01E7\u0123\u01E5\u0260\uA7A1\u1D79\uA77F]/g},
+				{'base':'h', 'letters':/[\u0068\u24D7\uFF48\u0125\u1E23\u1E27\u021F\u1E25\u1E29\u1E2B\u1E96\u0127\u2C68\u2C76\u0265]/g},
+				{'base':'hv','letters':/[\u0195]/g},
+				{'base':'i', 'letters':/[\u0069\u24D8\uFF49\u00EC\u00ED\u00EE\u0129\u012B\u012D\u00EF\u1E2F\u1EC9\u01D0\u0209\u020B\u1ECB\u012F\u1E2D\u0268\u0131]/g},
+				{'base':'j', 'letters':/[\u006A\u24D9\uFF4A\u0135\u01F0\u0249]/g},
+				{'base':'k', 'letters':/[\u006B\u24DA\uFF4B\u1E31\u01E9\u1E33\u0137\u1E35\u0199\u2C6A\uA741\uA743\uA745\uA7A3]/g},
+				{'base':'l', 'letters':/[\u006C\u24DB\uFF4C\u0140\u013A\u013E\u1E37\u1E39\u013C\u1E3D\u1E3B\u017F\u0142\u019A\u026B\u2C61\uA749\uA781\uA747]/g},
+				{'base':'lj','letters':/[\u01C9]/g},
+				{'base':'m', 'letters':/[\u006D\u24DC\uFF4D\u1E3F\u1E41\u1E43\u0271\u026F]/g},
+				{'base':'n', 'letters':/[\u006E\u24DD\uFF4E\u01F9\u0144\u00F1\u1E45\u0148\u1E47\u0146\u1E4B\u1E49\u019E\u0272\u0149\uA791\uA7A5]/g},
+				{'base':'nj','letters':/[\u01CC]/g},
+				{'base':'o', 'letters':/[\u006F\u24DE\uFF4F\u00F2\u00F3\u00F4\u1ED3\u1ED1\u1ED7\u1ED5\u00F5\u1E4D\u022D\u1E4F\u014D\u1E51\u1E53\u014F\u022F\u0231\u00F6\u022B\u1ECF\u0151\u01D2\u020D\u020F\u01A1\u1EDD\u1EDB\u1EE1\u1EDF\u1EE3\u1ECD\u1ED9\u01EB\u01ED\u00F8\u01FF\u0254\uA74B\uA74D\u0275]/g},
+				{'base':'oi','letters':/[\u01A3]/g},
+				{'base':'ou','letters':/[\u0223]/g},
+				{'base':'oo','letters':/[\uA74F]/g},
+				{'base':'p','letters':/[\u0070\u24DF\uFF50\u1E55\u1E57\u01A5\u1D7D\uA751\uA753\uA755]/g},
+				{'base':'q','letters':/[\u0071\u24E0\uFF51\u024B\uA757\uA759]/g},
+				{'base':'r','letters':/[\u0072\u24E1\uFF52\u0155\u1E59\u0159\u0211\u0213\u1E5B\u1E5D\u0157\u1E5F\u024D\u027D\uA75B\uA7A7\uA783]/g},
+				{'base':'s','letters':/[\u0073\u24E2\uFF53\u00DF\u015B\u1E65\u015D\u1E61\u0161\u1E67\u1E63\u1E69\u0219\u015F\u023F\uA7A9\uA785\u1E9B]/g},
+				{'base':'t','letters':/[\u0074\u24E3\uFF54\u1E6B\u1E97\u0165\u1E6D\u021B\u0163\u1E71\u1E6F\u0167\u01AD\u0288\u2C66\uA787]/g},
+				{'base':'tz','letters':/[\uA729]/g},
+				{'base':'u','letters':/[\u0075\u24E4\uFF55\u00F9\u00FA\u00FB\u0169\u1E79\u016B\u1E7B\u016D\u00FC\u01DC\u01D8\u01D6\u01DA\u1EE7\u016F\u0171\u01D4\u0215\u0217\u01B0\u1EEB\u1EE9\u1EEF\u1EED\u1EF1\u1EE5\u1E73\u0173\u1E77\u1E75\u0289]/g},
+				{'base':'v','letters':/[\u0076\u24E5\uFF56\u1E7D\u1E7F\u028B\uA75F\u028C]/g},
+				{'base':'vy','letters':/[\uA761]/g},
+				{'base':'w','letters':/[\u0077\u24E6\uFF57\u1E81\u1E83\u0175\u1E87\u1E85\u1E98\u1E89\u2C73]/g},
+				{'base':'x','letters':/[\u0078\u24E7\uFF58\u1E8B\u1E8D]/g},
+				{'base':'y','letters':/[\u0079\u24E8\uFF59\u1EF3\u00FD\u0177\u1EF9\u0233\u1E8F\u00FF\u1EF7\u1E99\u1EF5\u01B4\u024F\u1EFF]/g},
+				{'base':'z','letters':/[\u007A\u24E9\uFF5A\u017A\u1E91\u017C\u017E\u1E93\u1E95\u01B6\u0225\u0240\u2C6C\uA763]/g}
+			];
 
-// utils
-	function removeDiacritics (str) {
+			for(var i=0; i<defaultDiacriticsRemovalMap.length; i++) {
+				str = str.replace(defaultDiacriticsRemovalMap[i].letters, defaultDiacriticsRemovalMap[i].base);
+			}
 
-		var defaultDiacriticsRemovalMap = [
-			{'base':'A', 'letters':/[\u0041\u24B6\uFF21\u00C0\u00C1\u00C2\u1EA6\u1EA4\u1EAA\u1EA8\u00C3\u0100\u0102\u1EB0\u1EAE\u1EB4\u1EB2\u0226\u01E0\u00C4\u01DE\u1EA2\u00C5\u01FA\u01CD\u0200\u0202\u1EA0\u1EAC\u1EB6\u1E00\u0104\u023A\u2C6F]/g},
-			{'base':'AA','letters':/[\uA732]/g},
-			{'base':'AE','letters':/[\u00C6\u01FC\u01E2]/g},
-			{'base':'AO','letters':/[\uA734]/g},
-			{'base':'AU','letters':/[\uA736]/g},
-			{'base':'AV','letters':/[\uA738\uA73A]/g},
-			{'base':'AY','letters':/[\uA73C]/g},
-			{'base':'B', 'letters':/[\u0042\u24B7\uFF22\u1E02\u1E04\u1E06\u0243\u0182\u0181]/g},
-			{'base':'C', 'letters':/[\u0043\u24B8\uFF23\u0106\u0108\u010A\u010C\u00C7\u1E08\u0187\u023B\uA73E]/g},
-			{'base':'D', 'letters':/[\u0044\u24B9\uFF24\u1E0A\u010E\u1E0C\u1E10\u1E12\u1E0E\u0110\u018B\u018A\u0189\uA779]/g},
-			{'base':'DZ','letters':/[\u01F1\u01C4]/g},
-			{'base':'Dz','letters':/[\u01F2\u01C5]/g},
-			{'base':'E', 'letters':/[\u0045\u24BA\uFF25\u00C8\u00C9\u00CA\u1EC0\u1EBE\u1EC4\u1EC2\u1EBC\u0112\u1E14\u1E16\u0114\u0116\u00CB\u1EBA\u011A\u0204\u0206\u1EB8\u1EC6\u0228\u1E1C\u0118\u1E18\u1E1A\u0190\u018E]/g},
-			{'base':'F', 'letters':/[\u0046\u24BB\uFF26\u1E1E\u0191\uA77B]/g},
-			{'base':'G', 'letters':/[\u0047\u24BC\uFF27\u01F4\u011C\u1E20\u011E\u0120\u01E6\u0122\u01E4\u0193\uA7A0\uA77D\uA77E]/g},
-			{'base':'H', 'letters':/[\u0048\u24BD\uFF28\u0124\u1E22\u1E26\u021E\u1E24\u1E28\u1E2A\u0126\u2C67\u2C75\uA78D]/g},
-			{'base':'I', 'letters':/[\u0049\u24BE\uFF29\u00CC\u00CD\u00CE\u0128\u012A\u012C\u0130\u00CF\u1E2E\u1EC8\u01CF\u0208\u020A\u1ECA\u012E\u1E2C\u0197]/g},
-			{'base':'J', 'letters':/[\u004A\u24BF\uFF2A\u0134\u0248]/g},
-			{'base':'K', 'letters':/[\u004B\u24C0\uFF2B\u1E30\u01E8\u1E32\u0136\u1E34\u0198\u2C69\uA740\uA742\uA744\uA7A2]/g},
-			{'base':'L', 'letters':/[\u004C\u24C1\uFF2C\u013F\u0139\u013D\u1E36\u1E38\u013B\u1E3C\u1E3A\u0141\u023D\u2C62\u2C60\uA748\uA746\uA780]/g},
-			{'base':'LJ','letters':/[\u01C7]/g},
-			{'base':'Lj','letters':/[\u01C8]/g},
-			{'base':'M', 'letters':/[\u004D\u24C2\uFF2D\u1E3E\u1E40\u1E42\u2C6E\u019C]/g},
-			{'base':'N', 'letters':/[\u004E\u24C3\uFF2E\u01F8\u0143\u00D1\u1E44\u0147\u1E46\u0145\u1E4A\u1E48\u0220\u019D\uA790\uA7A4]/g},
-			{'base':'NJ','letters':/[\u01CA]/g},
-			{'base':'Nj','letters':/[\u01CB]/g},
-			{'base':'O', 'letters':/[\u004F\u24C4\uFF2F\u00D2\u00D3\u00D4\u1ED2\u1ED0\u1ED6\u1ED4\u00D5\u1E4C\u022C\u1E4E\u014C\u1E50\u1E52\u014E\u022E\u0230\u00D6\u022A\u1ECE\u0150\u01D1\u020C\u020E\u01A0\u1EDC\u1EDA\u1EE0\u1EDE\u1EE2\u1ECC\u1ED8\u01EA\u01EC\u00D8\u01FE\u0186\u019F\uA74A\uA74C]/g},
-			{'base':'OI','letters':/[\u01A2]/g},
-			{'base':'OO','letters':/[\uA74E]/g},
-			{'base':'OU','letters':/[\u0222]/g},
-			{'base':'P', 'letters':/[\u0050\u24C5\uFF30\u1E54\u1E56\u01A4\u2C63\uA750\uA752\uA754]/g},
-			{'base':'Q', 'letters':/[\u0051\u24C6\uFF31\uA756\uA758\u024A]/g},
-			{'base':'R', 'letters':/[\u0052\u24C7\uFF32\u0154\u1E58\u0158\u0210\u0212\u1E5A\u1E5C\u0156\u1E5E\u024C\u2C64\uA75A\uA7A6\uA782]/g},
-			{'base':'S', 'letters':/[\u0053\u24C8\uFF33\u1E9E\u015A\u1E64\u015C\u1E60\u0160\u1E66\u1E62\u1E68\u0218\u015E\u2C7E\uA7A8\uA784]/g},
-			{'base':'T', 'letters':/[\u0054\u24C9\uFF34\u1E6A\u0164\u1E6C\u021A\u0162\u1E70\u1E6E\u0166\u01AC\u01AE\u023E\uA786]/g},
-			{'base':'TZ','letters':/[\uA728]/g},
-			{'base':'U', 'letters':/[\u0055\u24CA\uFF35\u00D9\u00DA\u00DB\u0168\u1E78\u016A\u1E7A\u016C\u00DC\u01DB\u01D7\u01D5\u01D9\u1EE6\u016E\u0170\u01D3\u0214\u0216\u01AF\u1EEA\u1EE8\u1EEE\u1EEC\u1EF0\u1EE4\u1E72\u0172\u1E76\u1E74\u0244]/g},
-			{'base':'V', 'letters':/[\u0056\u24CB\uFF36\u1E7C\u1E7E\u01B2\uA75E\u0245]/g},
-			{'base':'VY','letters':/[\uA760]/g},
-			{'base':'W', 'letters':/[\u0057\u24CC\uFF37\u1E80\u1E82\u0174\u1E86\u1E84\u1E88\u2C72]/g},
-			{'base':'X', 'letters':/[\u0058\u24CD\uFF38\u1E8A\u1E8C]/g},
-			{'base':'Y', 'letters':/[\u0059\u24CE\uFF39\u1EF2\u00DD\u0176\u1EF8\u0232\u1E8E\u0178\u1EF6\u1EF4\u01B3\u024E\u1EFE]/g},
-			{'base':'Z', 'letters':/[\u005A\u24CF\uFF3A\u0179\u1E90\u017B\u017D\u1E92\u1E94\u01B5\u0224\u2C7F\u2C6B\uA762]/g},
-			{'base':'a', 'letters':/[\u0061\u24D0\uFF41\u1E9A\u00E0\u00E1\u00E2\u1EA7\u1EA5\u1EAB\u1EA9\u00E3\u0101\u0103\u1EB1\u1EAF\u1EB5\u1EB3\u0227\u01E1\u00E4\u01DF\u1EA3\u00E5\u01FB\u01CE\u0201\u0203\u1EA1\u1EAD\u1EB7\u1E01\u0105\u2C65\u0250]/g},
-			{'base':'aa','letters':/[\uA733]/g},
-			{'base':'ae','letters':/[\u00E6\u01FD\u01E3]/g},
-			{'base':'ao','letters':/[\uA735]/g},
-			{'base':'au','letters':/[\uA737]/g},
-			{'base':'av','letters':/[\uA739\uA73B]/g},
-			{'base':'ay','letters':/[\uA73D]/g},
-			{'base':'b', 'letters':/[\u0062\u24D1\uFF42\u1E03\u1E05\u1E07\u0180\u0183\u0253]/g},
-			{'base':'c', 'letters':/[\u0063\u24D2\uFF43\u0107\u0109\u010B\u010D\u00E7\u1E09\u0188\u023C\uA73F\u2184]/g},
-			{'base':'d', 'letters':/[\u0064\u24D3\uFF44\u1E0B\u010F\u1E0D\u1E11\u1E13\u1E0F\u0111\u018C\u0256\u0257\uA77A]/g},
-			{'base':'dz','letters':/[\u01F3\u01C6]/g},
-			{'base':'e', 'letters':/[\u0065\u24D4\uFF45\u00E8\u00E9\u00EA\u1EC1\u1EBF\u1EC5\u1EC3\u1EBD\u0113\u1E15\u1E17\u0115\u0117\u00EB\u1EBB\u011B\u0205\u0207\u1EB9\u1EC7\u0229\u1E1D\u0119\u1E19\u1E1B\u0247\u025B\u01DD]/g},
-			{'base':'f', 'letters':/[\u0066\u24D5\uFF46\u1E1F\u0192\uA77C]/g},
-			{'base':'g', 'letters':/[\u0067\u24D6\uFF47\u01F5\u011D\u1E21\u011F\u0121\u01E7\u0123\u01E5\u0260\uA7A1\u1D79\uA77F]/g},
-			{'base':'h', 'letters':/[\u0068\u24D7\uFF48\u0125\u1E23\u1E27\u021F\u1E25\u1E29\u1E2B\u1E96\u0127\u2C68\u2C76\u0265]/g},
-			{'base':'hv','letters':/[\u0195]/g},
-			{'base':'i', 'letters':/[\u0069\u24D8\uFF49\u00EC\u00ED\u00EE\u0129\u012B\u012D\u00EF\u1E2F\u1EC9\u01D0\u0209\u020B\u1ECB\u012F\u1E2D\u0268\u0131]/g},
-			{'base':'j', 'letters':/[\u006A\u24D9\uFF4A\u0135\u01F0\u0249]/g},
-			{'base':'k', 'letters':/[\u006B\u24DA\uFF4B\u1E31\u01E9\u1E33\u0137\u1E35\u0199\u2C6A\uA741\uA743\uA745\uA7A3]/g},
-			{'base':'l', 'letters':/[\u006C\u24DB\uFF4C\u0140\u013A\u013E\u1E37\u1E39\u013C\u1E3D\u1E3B\u017F\u0142\u019A\u026B\u2C61\uA749\uA781\uA747]/g},
-			{'base':'lj','letters':/[\u01C9]/g},
-			{'base':'m', 'letters':/[\u006D\u24DC\uFF4D\u1E3F\u1E41\u1E43\u0271\u026F]/g},
-			{'base':'n', 'letters':/[\u006E\u24DD\uFF4E\u01F9\u0144\u00F1\u1E45\u0148\u1E47\u0146\u1E4B\u1E49\u019E\u0272\u0149\uA791\uA7A5]/g},
-			{'base':'nj','letters':/[\u01CC]/g},
-			{'base':'o', 'letters':/[\u006F\u24DE\uFF4F\u00F2\u00F3\u00F4\u1ED3\u1ED1\u1ED7\u1ED5\u00F5\u1E4D\u022D\u1E4F\u014D\u1E51\u1E53\u014F\u022F\u0231\u00F6\u022B\u1ECF\u0151\u01D2\u020D\u020F\u01A1\u1EDD\u1EDB\u1EE1\u1EDF\u1EE3\u1ECD\u1ED9\u01EB\u01ED\u00F8\u01FF\u0254\uA74B\uA74D\u0275]/g},
-			{'base':'oi','letters':/[\u01A3]/g},
-			{'base':'ou','letters':/[\u0223]/g},
-			{'base':'oo','letters':/[\uA74F]/g},
-			{'base':'p','letters':/[\u0070\u24DF\uFF50\u1E55\u1E57\u01A5\u1D7D\uA751\uA753\uA755]/g},
-			{'base':'q','letters':/[\u0071\u24E0\uFF51\u024B\uA757\uA759]/g},
-			{'base':'r','letters':/[\u0072\u24E1\uFF52\u0155\u1E59\u0159\u0211\u0213\u1E5B\u1E5D\u0157\u1E5F\u024D\u027D\uA75B\uA7A7\uA783]/g},
-			{'base':'s','letters':/[\u0073\u24E2\uFF53\u00DF\u015B\u1E65\u015D\u1E61\u0161\u1E67\u1E63\u1E69\u0219\u015F\u023F\uA7A9\uA785\u1E9B]/g},
-			{'base':'t','letters':/[\u0074\u24E3\uFF54\u1E6B\u1E97\u0165\u1E6D\u021B\u0163\u1E71\u1E6F\u0167\u01AD\u0288\u2C66\uA787]/g},
-			{'base':'tz','letters':/[\uA729]/g},
-			{'base':'u','letters':/[\u0075\u24E4\uFF55\u00F9\u00FA\u00FB\u0169\u1E79\u016B\u1E7B\u016D\u00FC\u01DC\u01D8\u01D6\u01DA\u1EE7\u016F\u0171\u01D4\u0215\u0217\u01B0\u1EEB\u1EE9\u1EEF\u1EED\u1EF1\u1EE5\u1E73\u0173\u1E77\u1E75\u0289]/g},
-			{'base':'v','letters':/[\u0076\u24E5\uFF56\u1E7D\u1E7F\u028B\uA75F\u028C]/g},
-			{'base':'vy','letters':/[\uA761]/g},
-			{'base':'w','letters':/[\u0077\u24E6\uFF57\u1E81\u1E83\u0175\u1E87\u1E85\u1E98\u1E89\u2C73]/g},
-			{'base':'x','letters':/[\u0078\u24E7\uFF58\u1E8B\u1E8D]/g},
-			{'base':'y','letters':/[\u0079\u24E8\uFF59\u1EF3\u00FD\u0177\u1EF9\u0233\u1E8F\u00FF\u1EF7\u1E99\u1EF5\u01B4\u024F\u1EFF]/g},
-			{'base':'z','letters':/[\u007A\u24E9\uFF5A\u017A\u1E91\u017C\u017E\u1E93\u1E95\u01B6\u0225\u0240\u2C6C\uA763]/g}
-		];
-
-		for(var i=0; i<defaultDiacriticsRemovalMap.length; i++) {
-			str = str.replace(defaultDiacriticsRemovalMap[i].letters, defaultDiacriticsRemovalMap[i].base);
+		  return str;
 		}
-
-	  return str;
 	}
 
+// Facebook ==================================================================================================================
+	app.facebook = {
+		login: function() {
+			Parse.FacebookUtils.logIn("public_profile,email,user_birthday,user_hometown,user_location,publish_actions,user_likes", {
+				success: function(user) {
+				    if (!user.existed()) {
+				      	app.google.analytics.sendEvent('user', 'register', 'registration by facebook');
+				    } 
+				    else {
+				      	app.google.analytics.sendEvent('user', 'login', 'login by facebook');
+				    }
+				    app.facebook.setFacebookUser();
+				},
+				error: function(user, error) {
+					// alert("User cancelled the Facebook login or did not fully authorize.");
+				}
+	        });
+		},
+		setFacebookUser: function() {
+	    	app.spinnerStart();
+	    	FB.getLoginStatus(function(response) {
+			  	if (response && !response.error && response.status === 'connected') {
+			    	console.log('Logged in.');
+			    	FB.api('/me', {fields: 'id,name,email,last_name,first_name,gender,picture,link,timezone,updated_time,verified,locale'}, function(response) {
+			    		if (response && !response.error) {
+						  	// console.log('Your name is ' + response.name);
+						  	// console.log(response);
+						  	app.facebookUser = response;
+						  	if(app.facebookUser) {
+								var fid = app.facebookUser.id
+								var query = new Parse.Query(app.FacebookUser);
+								query.equalTo("fid", fid);
+								query.find({
+									success: function(results) {
+										var fid = app.facebookUser.id
+										app.loginedUser = Parse.User.current();
+								        if (results.length) {
+									        // facebook user existing so check update
+									        var fuser = results[0];
+									        if (fuser.updated_time!=app.facebookUser.updated_time) {
+									        	var id = fuser.id;
+									        	var fuser = new app.FacebookUser(app.facebookUser);
+												fuser.id  = id;
+												fuser.set("picture", app.facebookUser.picture.data.url);
+												fuser.set("fid",fid);
+												fuser.set("user", app.loginedUser);
+												fuser.save().then(function(fuser){
+													app.loginedUser.set('avatar', fuser.get('picture'));
+													app.loginedUser.set('name',   fuser.get('name'));
+													app.loginedUser.set('email',   fuser.get('email'));
+													// app.loginedUser.set("locale", fuser.get('locale'));
+													app.loginedUser.save().then(function(){
+														location.reload();
+													});	
+												});
+									        }
+								        }
+								        else {
+											// facebook user not existing so create
+											var fuser = new app.FacebookUser(app.facebookUser);
+											fuser.id = null;
+											fuser.set("fid",fid);
+											fuser.set("picture", app.facebookUser.picture.data.url);
+											fuser.set("user", app.loginedUser);
+											fuser.set("locale", app.facebookUser.locale);
+											fuser.save().then(function(fuser){
+												app.loginedUser.set('avatar', fuser.get('picture'));
+												app.loginedUser.set('name',   fuser.get('name'));
+												app.loginedUser.set("locale", fuser.get('locale'));
+												app.loginedUser.set('email',   fuser.get('email'));
+												app.loginedUser.set("profileLink", fuser.get('link'));
+												app.loginedUser.save().then(function(){
+													location.reload();
+												});	
+											});
+								        }
+								        app.facebookUser.id=fid;
+								        app.spinnerStop();
+									},
+									error: function(error) {
+										console.log("Error: " + error.code + " " + error.message);
+									}
+								});
+								// $('.app-avatar').attr('src',app.facebookUser.picture.data.url);
+								// $('.app-user-name').html(app.facebookUser.name);
+								// // app.startUser();
+					    	}
+						}
+					});
+			  	}
+			  	else {
+			  		console.log(response);
+			    	app.spinnerStop();
+			  	}
+			});
+	    },
+		shareRecipe: function(recipe) {
+			try {
+				var coverImageUrl = (recipe.get('coverImageUrl'))?recipe.get('coverImageUrl'):'https://s3.amazonaws.com/cookbookimg/icon_256.png'; 
+				FB.ui({
+					method  : 'share',
+					display : 'popup',
+					href    : recipe.getUrl(),
+					name    : recipe.get('name'),
+					title   : recipe.get('name'),
+					picture : coverImageUrl,
+					description: app.utils.htmlToText(recipe.get('description'))
+				});
+				app.google.analytics.sendSocial('facebook','share',app.settings.applicationUrl, recipe.getUrl());
+			} catch (e) {}
+	    },
+		postRecipe: function(recipe) {
+			try { // TODO
+				FB.api('/me/feed', 'post', {
+					message     : 'my_message',
+					link        : recipe.getUrl(),
+					picture     : recipe.get('coverImageUrl'),
+					name        : recipe.get('name'),
+					description : app.utils.htmlToText(recipe.get('description'))
+				},function(response) {
+		        	
+		        });
+				app.google.analytics.sendSocial('facebook','share', app.settings.applicationUrl, recipe.getUrl()); //TODO
+			} catch (e) {}
+		}
+	} // app.facebook
+// Google ==================================================================================================================
+	app.google = {}
+	app.google.analytics = {
+		sendEvent: function(eventCategory, eventAction, eventLabel) {
+			try {
+				ga('send', {
+					'hitType'       : 'event',      
+					'eventCategory' : eventCategory,
+					'eventAction'   : eventAction, 
+					'eventLabel'    : eventLabel
+				});
+			} catch (e) {}
+		},
+		sendSocial: function(network, action, target, page) {
+			try {
+				ga('send', {
+					'hitType': 'social',
+					'socialNetwork': network,
+					'socialAction': action,
+					'socialTarget': target,
+					'page': page
+				});
+			} catch (e) {}
+		},
+		pageview: function(page, title) {
+			try {
+				ga('set', {
+					page: page,
+					title: title
+				});
+				ga('send', 'pageview');
+		    } catch (e) {}
+		}
+	} // app.google.analytics
