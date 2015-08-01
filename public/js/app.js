@@ -18,14 +18,14 @@ Parse.User.prototype.getRelativeUrl = function() {
 }
 var s, app = {
     settings: {
-    	applicationId: "uJLDpdzRo0AS07SHiXDRUR6dX2egvU9rKcbHkIMP",
-    	applicationKey: "LkeF59Hh5HXrketX8qw6SFWwFALnVu8vqJKwkp5n",
-    	facebookAppId: "890469204379378", // Production
-    	// facebookAppId: "905249916234640", //Test
-    	AWSAccessKeyId: "AKIAJ5EPMLPXAQVXTNPQ",
-    	amazonBucket: "cookbookimg",
-    	analytics: 'UA-5658990-11',
-    	applicationUrl: 'http://www.justfoodyou.com/'
+		applicationId    : "uJLDpdzRo0AS07SHiXDRUR6dX2egvU9rKcbHkIMP",
+		applicationKey   : "LkeF59Hh5HXrketX8qw6SFWwFALnVu8vqJKwkp5n",
+		facebookAppId    : "890469204379378", // Production
+		// facebookAppId : "905249916234640", //Test
+		AWSAccessKeyId   : "AKIAJ5EPMLPXAQVXTNPQ",
+		amazonBucket     : "cookbookimg",
+		analytics        : 'UA-5658990-11',
+		applicationUrl   : 'http://www.justfoodyou.com/'
     },
     templates: {
     	'application'          : '#application-tmpl',
@@ -957,13 +957,13 @@ var s, app = {
 			}
 		},
 		onContact: function(event) {
-			window.open("http://www.justfoodyou.com/contact.html");
+			window.open(app.settings.applicationUrl+"contact.html");
 		},
 		onPrivacy: function(event) {
-			window.open("http://www.justfoodyou.com/privacy.html");
+			window.open(app.settings.applicationUrl+"privacy.html");
 		},
 		onAbout: function(event) {
-			window.open("http://www.justfoodyou.com/about.html");
+			window.open(app.settings.applicationUrl+"about.html");
 		},
 		createLabelgroup: function(event) {
 			if(event.keyCode == 13) {
@@ -2005,9 +2005,6 @@ var s, app = {
 										console.log("Error: " + error.code + " " + error.message);
 									}
 								});
-								// $('.app-avatar').attr('src',app.facebookUser.picture.data.url);
-								// $('.app-user-name').html(app.facebookUser.name);
-								// // app.startUser();
 					    	}
 						}
 					});
@@ -2034,7 +2031,7 @@ var s, app = {
 			} catch (e) {}
 	    },
 		postRecipe: function(recipe) {
-			try { // TODO
+			try { 
 				FB.api('/me/feed', 'post', {
 					message     : app.localeDict('FacebookPostMessage'),
 					link        : recipe.getUrl(),
