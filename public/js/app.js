@@ -1355,7 +1355,7 @@ var s, app = {
 						app.facebook.postRecipe(app.editRecipeView.model)	
 					}
 					postToFacebook = false;
-					
+
 					if (app.recipeListView) {
 						app.recipeListView.trigger('change');
 					}
@@ -1722,7 +1722,8 @@ var s, app = {
 			'FavoritedPeople'		  : 'Friends',
 			'originalWriter'		  : 'Original writer',
 			'CreateLabelGroup'		  : 'Create label group',
-			'CreateLabel'		      : 'Create label'
+			'CreateLabel'		      : 'Create label',
+			'FacebookPostMessage'	  : 'I created new recipe on Just Food You. Check!'
 		},
 		'hu' : {
 			'All'                     : 'Összes',
@@ -1764,6 +1765,7 @@ var s, app = {
 			'originalWriter'          : 'Eredetileg lejegyezte',
 			'CreateLabelGroup'        : 'Cimkecsoport létrehozása',
 			'CreateLabel'             : 'Cimke létrehozása',
+			'FacebookPostMessage'	  : 'Felvittem egy receptet a Just Food You szakácskönyvembe.'
 		},
 		'de' : {
 			'All'                     :'Alle',
@@ -1804,7 +1806,8 @@ var s, app = {
 			'FavoritedPeople'         :'Freunde',
 			'originalWriter'          :'Stammt von',
 			'CreateLabelGroup'        :'Erstellung einer Taggruppe',
-			'CreateLabel'             :'Erstellung eines Tags'
+			'CreateLabel'             :'Erstellung eines Tags',
+			'FacebookPostMessage'	  :'I created new recipe on Just Food You. Check!'
 		}
 	};
 // App Utils ==================================================================================================================
@@ -2033,7 +2036,7 @@ var s, app = {
 		postRecipe: function(recipe) {
 			try { // TODO
 				FB.api('/me/feed', 'post', {
-					message     : 'my_message',
+					message     : app.localeDict('FacebookPostMessage'),
 					link        : recipe.getUrl(),
 					picture     : recipe.get('coverImageUrl'),
 					name        : recipe.get('name'),
