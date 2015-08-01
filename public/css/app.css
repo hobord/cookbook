@@ -382,6 +382,7 @@ div.originalWriter img {
 	margin-top: 15px;
 	margin-right: 5px;
 	/*font-size: 14px;*/
+  cursor: pointer;
 }
 
 
@@ -411,9 +412,11 @@ div.originalWriter img {
 
 #editRecipe label {
 	margin-top: 15px;
+  cursor: pointer;
 }
 #editRecipe .label {
     margin: 5px;
+    cursor: pointer;
 }
 #editRecipe label.name {
 	width: 75px;
@@ -482,6 +485,7 @@ div.originalWriter img {
 	margin-top: 15px;
 	margin-right: 15px;
 	font-size: 14px;
+  cursor: pointer;
 }
 #viewRecipe .footer {
 	margin-top: 10px;

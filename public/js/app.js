@@ -453,7 +453,7 @@ var s, app = {
 			app.recipeListView.render();
 		},
 		print: function(recipe) {
-			window.open('/print/#recipe/_'+app.genUrlName(recipe.get('name'))+'-'+recipe.id);
+			window.open('/print/#recipe/_'+app.utils.genUrlName(recipe.get('name'))+'-'+recipe.id);
 		},
 		sendToKindle: function() {
 	        window.readabilityToken = '';
@@ -574,25 +574,31 @@ var s, app = {
 			start          : 0
 	    },
 	    validate: function(attrs) {
+	    	if ( _.has(attrs,"text") ) {
+	    		if (attrs.text) {
+		    		$('#search').val(attrs.text);
+		    		$('.app-header .mdl-textfield--expandable').addClass('is-focused');
+	    		}
+	    		else {
+	    			$('#search').val('');
+		    		$('.app-header .mdl-textfield--expandable').removeClass('is-focused');	
+	    		}
+	    	}
 	    	if ( _.has(attrs,"user") ) {
-				app.labelManager.loadLabels(attrs.user);
-				
-				this.set('favorites', false);
-				this.set('text','');
-				$('#search').val('');
-				$('.app-header .mdl-textfield--expandable').removeClass('is-focused');
-
 				if(attrs.user) {
 					$('.filter-user-avatar').attr('src',attrs.user.get('avatar'));
 					$('.filter-user-name').html(attrs.user.get('name'));
+					app.labelManager.loadLabels(attrs.user);
+					
+					this.set('favorites', false);
+					this.set('text','');
+					$('#search').val('');
+					$('.app-header .mdl-textfield--expandable').removeClass('is-focused');
 				}
 				else {
-					// $('.filter-user-avatar').attr('src','images/user.png');
 					$('.filter-user-avatar').attr('src','/icon_512.png');
 					$('.filter-user-name').html(app.localeDict('AllinJustFoodYou'));
-				}
 
-				if(attrs.user==null) {
 					this.set('labels', []);
 
 					var user = new Parse.User(); //TODO csinalni meg nemet admin usert
@@ -682,12 +688,12 @@ var s, app = {
 				if ( this.get('text') != '' ) {
 					var keywords = this.get('text').split(' ');
 			    	if ( Array.isArray(keywords) && keywords.length ) {
-			   			// keywords = _.uniq(app.genSearchMask(keywords.join(' ')));
+			   			// keywords = _.uniq(app.utils.genSearchMask(keywords.join(' ')));
 						// this.qRecipe.containsAll('searchMask', keywords);
 						gaKeywords += keywords.join('+');
 			    		var re = ""
 			    		for (var i = 0; i < keywords.length; i++) {
-			    			keywords[i] = app.genSearchMask(keywords[i]);
+			    			keywords[i] = app.utils.genSearchMask(keywords[i]);
 		    				re += "(?=.*"+keywords[i]+".*)"; // AND Condition
 			    			// OR Condition
 			    			// if (i == 0) 
@@ -1013,9 +1019,12 @@ var s, app = {
 			return false;
 		},
 		listAllRecipes: function() {
-			app.recipesFiltermanager.set( { user: null }, { validate:true } );
-			app.recipesFiltermanager.set('labels', null);
-			app.recipesFiltermanager.set('favorites', false);
+			app.recipesFiltermanager.set( { 
+				user: null, 
+				labels: null,
+				favorites: false,
+				text: ''
+			}, { validate:true } );
 			app.router.navigate("/", {trigger: false});
 			app.switchLayout('list');
 			app.recipesFiltermanager.search();
@@ -1060,7 +1069,8 @@ var s, app = {
 			'click .add-favorite'   : 'onToggleFavorite',
 			'click .print'   		: 'onPrint',
 			'click .kindle'   		: 'onKindle',
-			'click .share'          : 'onShare'
+			'click .share'          : 'onShare',
+			'click .label'			: 'onLabel'
 		},
 
 		initialize: function() {
@@ -1143,6 +1153,12 @@ var s, app = {
 		onShare: function(event) {
 			app.facebook.shareRecipe(this.model);
 			return true;
+		},
+		onLabel: function(event) {
+			var labelText = $(event.target).text();
+			app.recipesFiltermanager.set( {text: labelText}, {validate: true} );
+			app.recipesFiltermanager.search();
+			app.switchLayout('list');
 		}
 		
 	}); // app.RecipeView
@@ -1156,7 +1172,7 @@ var s, app = {
 			'click #btnEditRecipeSave'    : 'onSave',
 			'click .close'                : 'onDiscard',
 			'click #btnEditRecipeDiscard' : 'onDiscard',
-			'click #btnEditRecipeDelete'  : 'onDelete'
+			'click #btnEditRecipeDelete'  : 'onDelete',
 		},
 		initialize: function() {
 			this.template = _.template(underi18n.template(app.templates.editRecipe, app.localeDict));
@@ -1392,7 +1408,14 @@ var s, app = {
 
 	app.RecipeListItemView = Backbone.View.extend({
 		tagName   : 'div',
-		className : 'recipe-card col-sm-12 col-md-6 col-lg-4',
+		// className : 'recipe-card col-sm-12 col-md-6 col-lg-4',
+		className: function() {
+		    var lg = ' col-lg-'+((app.listedRecipes.length>2)?4:(app.listedRecipes.length==2)?6:12);
+			var md = ' col-md-'+((app.listedRecipes.length>2)?6:(app.listedRecipes.length==2)?6:12);
+			var sm = ' col-sm-'+((app.listedRecipes.length>2)?12:(app.listedRecipes.length==2)?12:12);
+			// this.className = 'recipe-card '+lg+md+sm;
+			return 'recipe-card '+lg+md+sm;
+		},
 		events : {
 			'click .btnRead'      : 'onRead',
 			'click .btnClone'     : 'onClone',
@@ -1400,8 +1423,9 @@ var s, app = {
 			'click .recipeName'   : 'onRead',
 			'click .image'        : 'onRead',
 			'click .add-favorite' : 'onToggleFavorite',
-			'click .print' : 'onPrint',
-			'click .share'  	  : 'onShare'
+			'click .print'        : 'onPrint',
+			'click .share'        : 'onShare',
+			'click .label'        : 'onLabel'
 		},
 		initialize: function() {
 			this.template = _.template(underi18n.template(app.templates.recipeListItem, app.localeDict));
@@ -1457,6 +1481,14 @@ var s, app = {
 		onShare: function(event) {
 			app.facebook.shareRecipe(this.model);
 			return true;
+		},
+		onLabel: function(event) {
+			var labelText = $(event.target).text();
+			app.google.analytics.sendEvent('recipe', 'labelclick', 'labelclick');
+			app.recipesFiltermanager.set( {text: labelText}, {validate: true} );
+			app.recipesFiltermanager.search();
+			app.switchLayout('list');
+			this.close();
 		}
 	}); // app.RecipeListItemView
 
