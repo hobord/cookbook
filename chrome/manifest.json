@@ -1,0 +1,72 @@
+{
+    "manifest_version": 2,
+    "name"        : "Just Food You clipper",
+    "description" : "Help grab recipe to www.justfoodyou.com",
+    "version"     : "0.1",
+    "icons": { 
+        "16"  : "icon_16.jpg",
+        "32"  : "icon_32.png",
+        "64"  : "icon_64.png",
+        "128" : "icon_128.png" 
+    },
+
+    "permissions": [
+        "identity",
+        "storage",
+        "tabs",
+        "http://*/*",
+        "https://*/*"
+    ],  
+    "content_security_policy": "script-src 'self' https://graph.facebook.com https://*.facebook.com https://connect.facebook.net; object-src 'self'; ",
+    "externally_connectable": {
+        "ids": [
+          "iehpofechmihgfphjmggfieaoandaena"
+        ],
+        "matches": [
+            "*://www.justfoodyou.com/*"
+        ],
+        "accepts_tls_channel_id": true
+    },
+
+    "options_page": "options.html",
+    "web_accessible_resources": [
+        "icon_16.jpg",        
+        "images/*",
+        "css/*",
+        "templates.html"
+    ],
+    "browser_action": {
+        "default_icon": "icon_32.png"
+    },
+    "content_scripts": [
+        {
+            "matches" : ["http://*/*", "https://*/*"],
+            "css": [
+                "css/style.css"
+            ],
+            "js" : [
+                "jquery.min.js",
+                "franc.js",
+                "underscore-min.js",
+                "backbone-min.js",
+                "backbone.typeahead.min.js",
+                "backbone.labelselector.js",
+                "parse-1.4.2.min.js",
+                "underi18n.js",
+                "content.js"
+            ],
+            "run_at"     : "document_end",
+            "all_frames" : true
+        }
+    ],
+    "background": {
+        "scripts": [
+            "jquery.min.js",
+            "franc.js",
+            "underscore-min.js",
+            "backbone-min.js",
+            "parse-1.4.2.min.js",
+            "background.js"
+        ]
+    }
+}

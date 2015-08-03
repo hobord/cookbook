@@ -50,15 +50,17 @@ Parse.Cloud.afterDelete("LabelGroup", function(request) {
 
 Parse.Cloud.define("awsInfo", function(request, response) {
 	// var setting = s3_uploader[request.params.uploadType];
-  if (imageExts[request.params.fileType]) {
-  	var setting = {"key":"users/image/","acl":"public-read","fileType":imageExts[request.params.fileType]};
+  if(request.user) {
+    if (imageExts[request.params.fileType]) {
+    	var setting = {"key":"users/image/","acl":"public-read","fileType":imageExts[request.params.fileType]};
 
-  	var keyValue = request.params.file+'.'+imageExts[request.params.fileType];
-  	var result = {"key":keyValue,
-  	            "acl":setting.acl,
-  	            "policy":s3_upload_policy(setting.acl), 
-  	            "signature":s3_upload_signature(setting.acl)};
-  	response.success(result);
+    	var keyValue = request.params.file+'.'+imageExts[request.params.fileType];
+    	var result = {"key":keyValue,
+    	            "acl":setting.acl,
+    	            "policy":s3_upload_policy(setting.acl), 
+    	            "signature":s3_upload_signature(setting.acl)};
+    	response.success(result);
+    }
   }
 });
 
@@ -98,6 +100,8 @@ Parse.Cloud.afterSave("User", function(request) {
 
 function initUser(user) {
   var locale = user.get('locale');
+  user.set('inited', true);
+  user.save();
   if(locale) {
     locale = locale.substr(0,2);
     for (var i = 0; i < deafultLabels[locale].length; i++) {
@@ -110,7 +114,6 @@ function initUser(user) {
       };
     }
   }
-  user.set('inited', true);
 }
 
 function createLabelgroup(group, user) {

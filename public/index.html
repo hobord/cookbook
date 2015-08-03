@@ -202,6 +202,9 @@
     <div class="mdl-card__supporting-text recipe-short-desc" itemprop="recipeInstructions">
       <%= recipe.directions %>
     </div>
+    <% if(recipe.source && recipe.source!='') { %>
+      <div><%_ Source %>:<%= recipe.source %></div>
+    <% } %>
     <% if(owriter) { %>
         <div class="originalWriter" itemprop="author"><%_ originalWriter %>:<img src="<%= owriter.avatar %>" alt="<%= owriter.name %>" title="<%= owriter.name %>" class="originalWriter img-circle app-avatar-small"><%= owriter.name %></div>
     <% } %>
@@ -264,7 +267,7 @@
     </div>
     <div class="thumbnail image-container">
       <img src="<% if (recipe.coverImageUrl) { print(recipe.coverImageUrl) } else { print('https://s3.amazonaws.com/cookbookimg/NoImage.jpg') } %>" alt="<%= recipe.name %>" title="<%= recipe.name %>" class="image">
-      <div class="after upload_image"><i class="material-icons">camera_alt</i></div>
+      <div class="after upload_image" id="dropbox"><i class="material-icons">camera_alt</i></div>
     </div>
     <input type="file" name="image_upload" id="image_upload" accept="image/*" capture="camera"/> 
     <label for="editRecipeDescription" class=""><%_ Description %></label>
@@ -280,7 +283,10 @@
       <label for="editRecipeDirections" class=""><%_ Directions %></label>
       <textarea name="editRecipeDirections" id="editReciptDirections" class="editable directions" rows="10" required="required" placeholder="<%_ placeholder_recipe_dir %>"><%= recipe.directions %></textarea>
     </div>
-
+    <div>
+      <label for="editRecipeSource" class="source"><%_ Source %></label>
+      <input id="editRecipeSource" name="source" class="form-control source" placeholder="<%_ placeholder_recipe_source %>" value="<%= recipe.source %>">
+    </div>
     <label id="editRecipePrivate" for="switch-private" class="mdl-switch mdl-js-switch mdl-js-ripple-effect">
       <input type="checkbox" id="switch-private" class="mdl-switch__input" <% if (recipe.private) { %>checked<% } %> />
       <span class="mdl-switch__label">Private</span>

@@ -86,6 +86,8 @@ var s, app = {
     		app.loginedUser = Parse.User.current();
     		var userID = app.loginedUser.id;
 
+    		app.chrome.extLogin();
+
     		var query = new Parse.Query(Parse.User);
 			// query.get(app.loginedUser.id).then(function (user) {
 			//     app.loginedUser = user;
@@ -234,12 +236,10 @@ var s, app = {
 			description   : '',
 			ingredients   : '',
 			directions    : '',
+			source        : '',
 			labels        : new Array(),
 			private       : false
 	    },
-		validate: function(attrs) {
-
-		},
 		makeSearchMasks: function() {
 			var selectedLabels = this.get('labels');
 			var searchmaskLabels = '';
@@ -275,28 +275,14 @@ var s, app = {
 			this.set('coverImageUrl',  imgUrl+'?' +new Date().getTime() );
 			this.save();
 			var filePath = 'users/'+app.loginedUser.id+'/recipes/'+this.id+'/cover';
-			Parse.Cloud.run('awsInfo', {file: filePath, fileType: imageFile.type}).then(function(result) {
-			    var fd = new FormData();
-
-			    fd.append('key', result.key);
-			    fd.append('acl', 'public-read');   
-			    fd.append('Content-Type', imageFile.type);
-			    fd.append('Cache-Control', 'max-age='+3600*24*7);     
-			    fd.append('AWSAccessKeyId', s.AWSAccessKeyId);
-			    fd.append('policy', result.policy)
-			    fd.append('signature', result.signature);
-			    fd.append("file", imageFile);
-
-			    var xhr = new XMLHttpRequest();
-
-			    // xhr.upload.addEventListener("progress", uploadProgress, false);
-			    xhr.addEventListener("load", callback, false);
-			    // xhr.addEventListener("error", uploadFailed, false);
-			    // xhr.addEventListener("abort", uploadCanceled, false);
-
-			    xhr.open('POST', 'https://'+s.amazonBucket+'.s3.amazonaws.com/', true); //MUST BE LAST LINE BEFORE YOU SEND 
-			    xhr.send(fd);
-			})
+			app.utils.uploadFileToAmazon(imageFile, filePath, callback);
+		},
+		uploadWebImage: function(url, callback) {
+			var coverUrl = 'https://s3.amazonaws.com/'+s.amazonBucket+'/users/'+app.loginedUser.id+'/recipes/'+this.id+'/cover.'+url.substr(-3);
+			this.set('coverImageUrl',  coverUrl+'?' +new Date().getTime() );
+			this.save();
+			var filePath = 'users/'+app.loginedUser.id+'/recipes/'+this.id+'/cover';
+			app.utils.uploadWebImageToAmazon(url, filePath, callback);
 		},
 		setPrivateAcl: function() {
 			var private = this.get('private');
@@ -333,8 +319,11 @@ var s, app = {
 //  ==================================================================================================================
 	app.userManager = {
 		initNewUser: function() {
-	    	Parse.Cloud.run('initUser');
-	    	location.reload();
+			app.loginedUser.set('inited', true);
+			app.loginedUser.save().then(function() {
+		    	Parse.Cloud.run('initUser')
+		    	location.reload();
+			});
 	    },
 	    loadFavoritedRecipes: function() {
 	    	var relation = app.loginedUser.relation("favorites");
@@ -427,6 +416,7 @@ var s, app = {
 				description   : orig.get('description'),
 				ingredients   : orig.get('ingredients'),
 				directions    : orig.get('directions'),
+				source    	  : orig.get('source'),
 				user          : currentUser,
 				labels        : new Array(),
 				private       : false
@@ -447,6 +437,7 @@ var s, app = {
 	    	window.document.title='Just Food You - '+recipe.get('name');
 	    	app.recipeView = new app.RecipeView({model: recipe});
 	    	app.switchLayout('view');
+	    	app.google.analytics.sendEvent('recipe', 'read', 'read');
 	    },
 		renderRecipeList: function(recipeList) {
 			app.recipeListView = new app.RecipeListView({collection: recipeList});
@@ -454,6 +445,7 @@ var s, app = {
 		},
 		print: function(recipe) {
 			window.open('/print/#recipe/_'+app.utils.genUrlName(recipe.get('name'))+'-'+recipe.id);
+			app.google.analytics.sendEvent('recipe', 'print', 'print');
 		},
 		sendToKindle: function() {
 	        window.readabilityToken = '';
@@ -482,6 +474,7 @@ var s, app = {
 					var labelQuery = new Parse.Query(app.Label);
 		    		labelQuery.equalTo("user", filterUser);
 		    		labelQuery.descending('name');
+		    		labelQuery.limit(300)
 		    		labelQuery.find({
 		    			success: function(labels) {
 							$(app.NavigationLabelGroupView.prototype.el).empty(); //#LabelGroupsViewPlaceholder'
@@ -682,6 +675,7 @@ var s, app = {
 				var relation = app.loginedUser.relation("favorites");
 				this.qRecipe = relation.query();
 				app.google.analytics.pageview('/favorites', 'Favorites');
+				app.google.analytics.sendEvent('recipe', 'list', 'favorites');
 			}
 			else {
 				// keywords
@@ -745,8 +739,10 @@ var s, app = {
 					$('.app-navigation').find('.cmdListAllRecipes i').addClass('mdl-color-text--light-green-400');
 			    	$('.app-navigation').find('.cmdListAllRecipes i').removeClass('mdl-color-text--light-green-900');					
 				}
+
+				app.google.analytics.pageview('/search?q='+gaKeywords, 'Search');
+				app.google.analytics.sendEvent('recipe', 'list', 'list');
 			}
-			app.google.analytics.pageview('/search?q='+gaKeywords, 'Search');
 
 			// order by
 			if ( this.get('orderBy') ) {
@@ -1169,6 +1165,7 @@ var s, app = {
 			'change .description'         : 'onChangeDescription',
 			'change .ingredients'         : 'onChangeIngredients',
 			'change .directions'          : 'onChangeDirections',
+			'change #editRecipeSource'    : 'onChangeSource',
 			'click #btnEditRecipeSave'    : 'onSave',
 			'click .close'                : 'onDiscard',
 			'click #btnEditRecipeDiscard' : 'onDiscard',
@@ -1177,6 +1174,7 @@ var s, app = {
 		initialize: function() {
 			this.template = _.template(underi18n.template(app.templates.editRecipe, app.localeDict));
 		    this.render();
+		    this.uploadImageUrl = '';
 		    this.renderLabelsGroups();
 		},
 		render: function() {
@@ -1185,6 +1183,7 @@ var s, app = {
 			// this.$el.html(html);
 			this.$el.html(html);
 			$('#editRecipePlaceholder').append(this.$el);
+
 			$('.upload_image').on('click', function() {
 				$('#image_upload').click();
 			});
@@ -1200,6 +1199,35 @@ var s, app = {
 			        reader.readAsDataURL(file);
 			    }
 			});
+
+		    var dropbox = document.getElementById('dropbox');
+		    dropbox.addEventListener('dragenter', noopHandler, false);
+		    dropbox.addEventListener('dragexit', noopHandler, false);
+		    dropbox.addEventListener('dragover', noopHandler, false);
+		    dropbox.addEventListener('drop', drop, false);
+		    
+		    function noopHandler(evt) {
+		        evt.stopPropagation();
+		        evt.preventDefault();
+		    }
+		    function drop(evt) {
+		        evt.stopPropagation();
+		        evt.preventDefault(); 
+		        var imageUrl = evt.dataTransfer.getData('URL');
+		        if (imageUrl == '') {
+					var file = evt.dataTransfer.files[0];
+					$('#image_upload')[0].files = evt.dataTransfer.files
+					var reader = new FileReader();
+			        reader.onloadend = function() {
+			            $('#editRecipe .image').attr('src', reader.result);
+			        }
+			        reader.readAsDataURL(file);
+		        }
+		        else {
+			        $('#editRecipe .image').attr('src', imageUrl);
+			        app.editRecipeView.uploadImageUrl = imageUrl;
+		        }
+		    }
 
 			var editor = new MediumEditor('.editable', {
 				toolbar: {
@@ -1282,6 +1310,9 @@ var s, app = {
 		onChangeDirections: function(evt) {
 			this.model.set('directions', evt.currentTarget.value);
 		},
+		onChangeSource: function(evt) {
+			this.model.set('source', evt.currentTarget.value);
+		},
 		onSave: function(evt) {
 			app.spinnerStart();
 
@@ -1316,66 +1347,53 @@ var s, app = {
 					labelsRelation.add(labels);
 					for (var i = 0; i < labels.length; i++) {
 						ids.push(labels[i].id);
-						//TODO Add to searchmask
 					};
 				}
 				model.set('labelsId', ids);
 
-				//image
-				var imageFile = document.getElementById('image_upload');
-				if (imageFile && imageFile.files.length) {
-					imageFile = imageFile.files[0];
-					model.uploadImage(imageFile, function() {
-				    	// console.log('img uploaded');
-				    	var imageTags = $('.recipe-'+app.editRecipeView.model.id+' .image');
-				    	if (imageTags && imageTags.length && imageTags[0].src) {
-					    	$(imageTags).attr('src', imageTags[0].src +'?' +new Date().getTime());
-				    	}
-
-				    	app.editRecipeView.model.get('user').fetch();
-				    	app.labelManager.loadLabels(app.loginedUser);
-					    app.spinnerStop();
-						app.recipeManager.viewRecipe(app.editRecipeView.model);
-						if (app.recipeListView) {
-							app.recipeListView.trigger('change');
-						}
-						app.google.analytics.sendEvent('recipe', 'uploadImage', 'uploadImage');
-
-						if (isNewRecipe) {
-							// app.facebook.postRecipe(app.editRecipeView.model)
-						}
-						isNewRecipe = false;
-						
-						if (postToFacebook) {
-							app.facebook.postRecipe(app.editRecipeView.model)
-						}
-						postToFacebook = false;
-
-						app.editRecipeView.close();
-				    })
-				} //end image upload
-				else {
-					model.save();
-
-					model.get('user').fetch();
-					app.labelManager.loadLabels(app.loginedUser);
+				function saveSuccess() {
+					app.editRecipeView.model.get('user').fetch();
+			    	app.labelManager.loadLabels(app.loginedUser);
+				    app.spinnerStop();
 					app.recipeManager.viewRecipe(app.editRecipeView.model);
-					app.spinnerStop();
-
+					if (app.recipeListView) {
+						app.recipeListView.trigger('change');
+					}
 					if (isNewRecipe) {
 						// app.facebook.postRecipe(app.editRecipeView.model)
 					}
 					isNewRecipe = false;
-
+					
 					if (postToFacebook) {
-						app.facebook.postRecipe(app.editRecipeView.model)	
+						app.facebook.postRecipe(app.editRecipeView.model)
 					}
 					postToFacebook = false;
 
-					if (app.recipeListView) {
-						app.recipeListView.trigger('change');
-					}
 					app.editRecipeView.close();
+				}
+
+				//image
+				function uploadCallback() {
+					// console.log('img uploaded');
+			    	var imageTags = $('.recipe-'+app.editRecipeView.model.id+' .image');
+			    	if (imageTags && imageTags.length && imageTags[0].src) {
+				    	$(imageTags).attr('src', imageTags[0].src +'?' +new Date().getTime());
+			    	}
+					app.google.analytics.sendEvent('recipe', 'uploadImage', 'uploadImage');
+					saveSuccess();
+				}
+
+				var imageFile = document.getElementById('image_upload');
+				if (imageFile && imageFile.files.length) {
+					imageFile = imageFile.files[0];
+					model.uploadImage(imageFile, uploadCallback)
+				}
+				// else if(app.editRecipeView.uploadImageUrl!='') {
+				// 	model.uploadWebImage(app.editRecipeView.uploadImageUrl, uploadCallback );
+				// app.utils.uploadWebImageToAmazon('http://img.444.hu/kerites_magyar_szerb_hatar.jpg','users/valami',function(result){console.log(result);console.log('yeah')})
+				// } //end image upload
+				else {
+					model.save().then(saveSuccess);
 				}
 			})
 		},
@@ -1746,6 +1764,8 @@ var s, app = {
 			'placeholder_recipe_desc' : 'Type description...',
 			'placeholder_recipe_ingr' : 'Type ingredients...',
 			'placeholder_recipe_dir'  : 'Type directions',
+			'Source' 				  : 'Source',
+			'placeholder_recipe_source': 'Source',
 			'editRecipePrepTime'      : 'Preparation time (minute): ',
 			'editRecipeCookTime'      : ', cook time: ',
 			'editRecipeMakeTime'      : ', sum make time: ',
@@ -1788,6 +1808,8 @@ var s, app = {
 			'placeholder_recipe_desc' : 'Rövid ismertető',
 			'placeholder_recipe_ingr' : 'Hozzávalók',
 			'placeholder_recipe_dir'  : 'Elkészítése',
+			'Source' 				  : 'Forrás',
+			'placeholder_recipe_source': 'Forrás',
 			'editRecipePrepTime'      : 'Előkészítés ideje (perc):',
 			'editRecipeCookTime'      : ', elkészítés ideje:',
 			'editRecipeMakeTime'      : ', összesen:',
@@ -1830,6 +1852,8 @@ var s, app = {
 			'placeholder_recipe_desc' :'Kurze Beschreibung',
 			'placeholder_recipe_ingr' :'Zutaten',
 			'placeholder_recipe_dir'  :'Zubereitung',
+			'Source'				  : 'Quelle',
+			'placeholder_recipe_source': 'Quelle',
 			'editRecipePrepTime'      :'Vorbereitungszeit',
 			'editRecipeCookTime'      :'Kochzeit',
 			'editRecipeMakeTime'      :'Insgesamt',
@@ -1951,9 +1975,137 @@ var s, app = {
 			}
 
 		  return str;
+		},
+		getBase64Image: function(img) {
+		    // Create an empty canvas element
+		    var canvas = document.createElement("canvas");
+		    canvas.width = img.width;
+		    canvas.height = img.height;
+
+		    // Copy the image contents to the canvas
+		    var ctx = canvas.getContext("2d");
+		    ctx.drawImage(img, 0, 0);
+
+		    // Get the data-URL formatted image
+		    // Firefox supports PNG and JPEG. You could check img.src to guess the
+		    // original format, but be aware the using "image/jpg" will re-encode the image.
+		    var dataURL = canvas.toDataURL("image/png");
+
+		    return dataURL.replace(/^data:image\/(png|jpg);base64,/, "");
+		},
+		getBase64FromImageUrl: function(url, callback) {
+		    var img = new Image();
+			img.setAttribute('crossOrigin', 'anonymous'); // ERROR
+		    img.onload = function () {
+		    	callback(app.utils.getBase64Image(this));
+		    };
+
+		    img.src = url;
+		},
+		dataURItoBlob: function(dataURI) {
+		    var binary = atob(dataURI.split(',')[1]);
+		    var array = [];
+		    for(var i = 0; i < binary.length; i++) {
+		        array.push(binary.charCodeAt(i));
+		    }
+		    return new Blob([new Uint8Array(array)], {type: 'image/jpeg'});
+		},
+		uploadWebImageToAmazon: function(imgUrl, toPath, callback) {
+			// var imageExts = {
+			// 	"png": "image/png",
+			// 	"jpg":"image/jpg",
+			// }
+			var getImg = new XMLHttpRequest();
+			getImg.open("GET", imgUrl, true);
+			getImg.responseType = "blob";
+
+			getImg.onload = function(oEvent) {
+				var file = getImg.response;
+				var callback = callback;
+				Parse.Cloud.run('awsInfo', {file: toPath, fileType: "image/jpg"}).then(function(result) {
+				    var fd = new FormData();
+
+				    fd.append('key', result.key);
+				    fd.append('acl', 'public-read');   
+				    fd.append('Content-Type', "image/jpg");
+				    fd.append('Cache-Control', 'max-age='+3600*24*7);     
+				    fd.append('AWSAccessKeyId', s.AWSAccessKeyId);
+				    fd.append('policy', result.policy)
+				    fd.append('signature', result.signature);
+				    fd.append("file", file);
+
+				    var xhr = new XMLHttpRequest();
+
+				    // xhr.upload.addEventListener("progress", uploadProgress, false);
+				    xhr.addEventListener("load", callback, false);
+				    // xhr.addEventListener("error", uploadFailed, false);
+				    // xhr.addEventListener("abort", uploadCanceled, false);
+
+				    xhr.open('POST', 'https://'+s.amazonBucket+'.s3.amazonaws.com/', true); //MUST BE LAST LINE BEFORE YOU SEND 
+				    xhr.send(fd);
+				})
+			}
+			getImg.send();
+			//app.utils.uploadWebImageToAmazon('http://baar.com/foo.jpg','users/newTest.jpg',function(result){console.log(result); console.log('uploaded')});
+			// app.utils.getBase64FromImageUrl(imgUrl, function(imageFile) {
+			// 	var array = [];
+			// 	var binary = atob(imageFile);
+			//     for(var i = 0; i < binary.length; i++) {
+			//         array.push(binary.charCodeAt(i));
+			//     }
+			//     imageFile = new Blob([new Uint8Array(array)], {type: 'image/jpeg'});
+			//     app.utils.uploadFileToAmazon(imageFile, toPath, callback);
+			// })
+		},
+		uploadFileToAmazon: function(file, toPath, callback) {
+			Parse.Cloud.run('awsInfo', {file: toPath, fileType: file.type}).then(function(result) {
+			    var fd = new FormData();
+
+			    fd.append('key', result.key);
+			    fd.append('acl', 'public-read');   
+			    fd.append('Content-Type', file.type);
+			    fd.append('Cache-Control', 'max-age='+3600*24*7);     
+			    fd.append('AWSAccessKeyId', s.AWSAccessKeyId);
+			    fd.append('policy', result.policy)
+			    fd.append('signature', result.signature);
+			    fd.append("file", file);
+
+			    var xhr = new XMLHttpRequest();
+
+			    // xhr.upload.addEventListener("progress", uploadProgress, false);
+			    xhr.addEventListener("load", callback, false);
+			    // xhr.addEventListener("error", uploadFailed, false);
+			    // xhr.addEventListener("abort", uploadCanceled, false);
+
+			    xhr.open('POST', 'https://'+s.amazonBucket+'.s3.amazonaws.com/', true); //MUST BE LAST LINE BEFORE YOU SEND 
+			    xhr.send(fd);
+			})
 		}
 	}
 
+// CROME EXTENSION ========================================================================================================
+	app.chrome = {
+		extLogin: function() {
+			var userKey = Parse._getParsePath(Parse.User._CURRENT_USER_KEY)
+			var user = Parse.User.current();
+			var json = user.toJSON();
+			json._id = user.id;
+			json._sessionToken = user._sessionToken;
+			var userVal = JSON.stringify(json)
+			var installKey = Parse._getParsePath('installationId')
+			var installVal = Parse._installationId
+
+			chrome.runtime.sendMessage( 'iehpofechmihgfphjmggfieaoandaena', { 
+				type: 'login', 
+				userKey: userKey, 
+				userVal: userVal,
+				installKey: installKey,
+				installVal: installVal
+			}, function(response) {
+			  console.log(response);
+			});
+		}
+	}
 // Facebook ==================================================================================================================
 	app.facebook = {
 		login: function() {
@@ -2060,6 +2212,7 @@ var s, app = {
 					description: app.utils.htmlToText(recipe.get('description'))
 				});
 				app.google.analytics.sendSocial('facebook','share',app.settings.applicationUrl, recipe.getUrl());
+				app.google.analytics.sendEvent('facebook', 'share', 'share');
 			} catch (e) {}
 	    },
 		postRecipe: function(recipe) {
@@ -2074,6 +2227,7 @@ var s, app = {
 		        	
 		        });
 				app.google.analytics.sendSocial('facebook','share', app.settings.applicationUrl, recipe.getUrl()); //TODO
+				app.google.analytics.sendEvent('facebook', 'post', 'post');
 			} catch (e) {}
 		}
 	} // app.facebook
