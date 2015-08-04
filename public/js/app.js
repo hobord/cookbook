@@ -86,6 +86,17 @@ var s, app = {
     		app.loginedUser = Parse.User.current();
     		var userID = app.loginedUser.id;
 
+    		if(userID = 'DPjbxTdjZW') {
+    			try {
+    				_gaq.push(['_setCustomVar', 1, 'User', 'Developer']);
+    			} catch (e) {}
+    		}
+    		else {
+    			try {
+	    			_gaq.push(['_setCustomVar', 1, 'User', 'Registred']);
+    			} catch (e) {}
+    		}
+
     		app.chrome.extLogin();
 
     		var query = new Parse.Query(Parse.User);
@@ -110,6 +121,9 @@ var s, app = {
     	else {
     		// Anonymous user;
     		var userID = 'auto'
+    		try {
+    			_gaq.push(['_setCustomVar', 1, 'User', 'Anonymous']);
+			} catch (e) {}
 	    	app.applicationView.render();
 	    	app.router = new app.AppRouter();
 			Backbone.history.start();
@@ -133,10 +147,11 @@ var s, app = {
     	if (this.localeDicts[this.localeCode]) {
 			this.localeDict = underi18n.MessageFactory(this.localeDicts[this.localeCode]);
     	} else {
-			this.localeDict = underi18n.MessageFactory('en');
+			this.localeDict = underi18n.MessageFactory(this.localeDicts['en']);
     	}
     },
     chanegLocale: function(localeCode) {
+    	app.google.analytics.sendEvent('user', 'chanegLocale', localeCode);
     	this.setAppLocale(localeCode);
     	if(app.loginedUser) {
     		app.loginedUser.set('locale',localeCode);
@@ -144,7 +159,9 @@ var s, app = {
     			location.reload();
     		});
     	}
-    	app.google.analytics.sendEvent('user', 'chanegLocale', localeCode);
+    	else {
+    		location.reload();
+    	}
     },
     loadTemplates: function() {
     	_.each(this.templates, function(item, key){
@@ -160,6 +177,11 @@ var s, app = {
     },
     switchLayout: function(layout) {
     	this.currentLayout = layout;
+
+    	if (layout!='list') {
+	    	app.tempScrollTop = $("main").scrollTop();
+    	}
+
     	var zones = ['recipeResultsList', 'viewRecipe', 'editRecipe' ]
     	zones.forEach(function(element, index, array){ 
     		$('#'+element).hide();
@@ -180,6 +202,10 @@ var s, app = {
 	    	case 'list':
 		    	$('#recipeResultsList').show();
 		    	$('#btnCreateRecipe').show();
+		    	if (app.tempScrollTop) {
+			    	$("main").scrollTop(app.tempScrollTop);
+		    	}
+		    	// app.tempScrollTop = 0;
 	    		window.document.title='Just Food You';
 		    	var filteredUser = app.recipesFiltermanager.get('user');
 		    	if (filteredUser) {
@@ -316,7 +342,7 @@ var s, app = {
 		}
 	}); // app.Recipe
 
-//  ==================================================================================================================
+//  Managers ===============================================================================================================
 	app.userManager = {
 		initNewUser: function() {
 			app.loginedUser.set('inited', true);
@@ -430,8 +456,8 @@ var s, app = {
 	    	app.google.analytics.sendEvent('recipe', 'edit', 'edit');
 	    },
 	    viewRecipe: function(recipe) {
-	    	if (this.recipeView) {
-	    		this.recipeView.close();
+	    	if (app.recipeView) {
+	    		app.recipeView.close();
 	    	}
 	    	app.router.navigate(recipe.getRelativeUrl(), { trigger: false } );
 	    	window.document.title='Just Food You - '+recipe.get('name');
@@ -737,7 +763,10 @@ var s, app = {
 				}
 				else {
 					$('.app-navigation').find('.cmdListAllRecipes i').addClass('mdl-color-text--light-green-400');
-			    	$('.app-navigation').find('.cmdListAllRecipes i').removeClass('mdl-color-text--light-green-900');					
+			    	$('.app-navigation').find('.cmdListAllRecipes i').removeClass('mdl-color-text--light-green-900');
+
+			    	// Just original	
+			    	this.qRecipe.equalTo('originalWriter', null);			
 				}
 
 				app.google.analytics.pageview('/search?q='+gaKeywords, 'Search');
@@ -772,7 +801,7 @@ var s, app = {
 			// do it
 			app.spinnerStart();
 			this.qRecipe.find().then(function (list) {
-				$('main').scrollTop(0);
+				// $('main').scrollTop(0);
 			    // use list
 			    app.listedRecipes = new Parse.Collection(list, {model:app.Recipe});
 			    app.recipeManager.renderRecipeList(app.listedRecipes);
@@ -1470,6 +1499,9 @@ var s, app = {
 			app.recipeManager.print(this.model);
 		},
 		onRead: function(e) {
+			if (e.metaKey || e.ctrlKey || e.shiftKey) {
+				window.open('/#recipe/_'+app.utils.genUrlName(this.model.get('name'))+'-'+this.model.id);
+			}
 			app.recipeManager.viewRecipe(this.model);
 		},
 		onClone: function(event) {
@@ -1525,7 +1557,6 @@ var s, app = {
 				// }
 				// else {
 				// }
-					// (adsbygoogle = window.adsbygoogle || []).push({});
 				this.renderOne(model);
 				counter++;
 				if(counter % 2 == 0) {
@@ -1535,7 +1566,8 @@ var s, app = {
 					$list.append('<div class="clearfix visible-lg-block"></div>');
 				}
 		    }, this);
-			try {FB.XFBML.parse(this.el);} catch (e) {}
+			// (adsbygoogle = window.adsbygoogle || []).push({});
+			// try {FB.XFBML.parse(this.el);} catch (e) {}
 			return this;
 		},
 		renderAd: function() {
@@ -2086,24 +2118,26 @@ var s, app = {
 // CROME EXTENSION ========================================================================================================
 	app.chrome = {
 		extLogin: function() {
-			var userKey = Parse._getParsePath(Parse.User._CURRENT_USER_KEY)
-			var user = Parse.User.current();
-			var json = user.toJSON();
-			json._id = user.id;
-			json._sessionToken = user._sessionToken;
-			var userVal = JSON.stringify(json)
-			var installKey = Parse._getParsePath('installationId')
-			var installVal = Parse._installationId
+			try {
+				var userKey = Parse._getParsePath(Parse.User._CURRENT_USER_KEY)
+				var user = Parse.User.current();
+				var json = user.toJSON();
+				json._id = user.id;
+				json._sessionToken = user._sessionToken;
+				var userVal = JSON.stringify(json)
+				var installKey = Parse._getParsePath('installationId')
+				var installVal = Parse._installationId
 
-			chrome.runtime.sendMessage( 'iehpofechmihgfphjmggfieaoandaena', { 
-				type: 'login', 
-				userKey: userKey, 
-				userVal: userVal,
-				installKey: installKey,
-				installVal: installVal
-			}, function(response) {
-			  console.log(response);
-			});
+				chrome.runtime.sendMessage( 'iehpofechmihgfphjmggfieaoandaena', { 
+					type: 'login', 
+					userKey: userKey, 
+					userVal: userVal,
+					installKey: installKey,
+					installVal: installVal
+				}, function(response) {
+				  console.log(response);
+				});
+			} catch (e) {}
 		}
 	}
 // Facebook ==================================================================================================================

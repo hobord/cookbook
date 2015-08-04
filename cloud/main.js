@@ -33,6 +33,35 @@ Parse.Cloud.define("hello", function(request, response) {
   response.success("Hello world!");
 });
 
+
+Parse.Cloud.afterDelete("User", function(request) {
+  var query = new Parse.Query("LabelGroup");
+  query.equalTo("user", request.object);
+  query.find().then(function(labels) {
+    Parse.Object.destroyAll(labels);
+  }).then(function(success) {
+      var query = new Parse.Query("Label");
+      query.equalTo("user", request.object);
+      query.find().then(function(labels) {
+        Parse.Object.destroyAll(labels);
+      })
+
+  });
+
+  var query = new Parse.Query("Recipe");
+  query.equalTo("user", request.object);
+  query.find().then(function(labels) {
+    Parse.Object.destroyAll(labels);
+  });
+
+  var query = new Parse.Query("FacebookUser");
+  query.equalTo("user", request.object);
+  query.find().then(function(labels) {
+    Parse.Object.destroyAll(labels);
+  });
+
+});
+
 Parse.Cloud.afterDelete("LabelGroup", function(request) {
   var query = new Parse.Query("Label");
   query.equalTo("labelgroup", request.object);
