@@ -48,6 +48,7 @@ var s, app = {
         s = this.settings, this.initalizers();
     },
     initalizers: function() {
+    	window.location.hash = window.location.hash.replace(/#!/, '#');
     	this.setAppLocale();
     	this.loadTemplates();
 		this.applicationView  = new this.ApplicationView();
@@ -314,7 +315,7 @@ var s, app = {
 			return app.settings.applicationUrl+this.getRelativeUrl();
 		},
 		getRelativeUrl: function() {
-			return '#recipe/_'+app.utils.genUrlName(this.get('name'))+'-'+this.id;
+			return '#!recipe/_'+app.utils.genUrlName(this.get('name'))+'-'+this.id;
 		},
 		getEditUrl: function() {
 			return app.settings.applicationUrl+this.getRelativeEditUrl();
@@ -813,6 +814,7 @@ var s, app = {
 		routes: {
 		    "help":                 "help",    // #help
 		    "recipe/:name-:rid":	"recipe",  // show recipe
+		    "!recipe=:name-:rid":	"recipe",  // show recipe
 		    "u/:name-:uid" : 		"user",	   // list user recipes
 		    's/:search' : 			"search", 
 		    '*path':  'defaultRoute'

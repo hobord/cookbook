@@ -7,6 +7,8 @@ var conf = require('cloud/config.js');
 var Crypto = require('crypto');
 var Buffer = require('buffer').Buffer;
 
+require('cloud/cloudApp.js');
+
 var imageExts = {
   "image/png":"png",
   "image/jpg":"jpg",
@@ -38,15 +40,14 @@ Parse.Cloud.afterDelete("User", function(request) {
   var query = new Parse.Query("LabelGroup");
   query.equalTo("user", request.object);
   query.find().then(function(labels) {
-    Parse.Object.destroyAll(labels);
-  }).then(function(success) {
+    Parse.Object.destroyAll(labels).then(function(){
       var query = new Parse.Query("Label");
       query.equalTo("user", request.object);
       query.find().then(function(labels) {
         Parse.Object.destroyAll(labels);
       })
-
-  });
+    });
+  })
 
   var query = new Parse.Query("Recipe");
   query.equalTo("user", request.object);
@@ -120,6 +121,7 @@ function s3_upload_signature(acl) {
 Parse.Cloud.define("initUser", function(request, response) {
   initUser(request.user);
 });
+
 Parse.Cloud.afterSave("User", function(request) {
   var user = request.object;
   if(!user.get('inited')) {
