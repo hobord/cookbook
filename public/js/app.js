@@ -86,22 +86,10 @@ var s, app = {
     		app.loginedUser = Parse.User.current();
     		var userID = app.loginedUser.id;
 
-    		if(userID = 'DPjbxTdjZW') {
-    			try {
-    				_gaq.push(['_setCustomVar', 1, 'User', 'Developer']);
-    			} catch (e) {}
-    		}
-    		else {
-    			try {
-	    			_gaq.push(['_setCustomVar', 1, 'User', 'Registred']);
-    			} catch (e) {}
-    		}
-
-    		app.chrome.extLogin();
+    		app.google.analytics.setUserSegment(app.loginedUser);
+    		app.google.chrome.extLogin();
 
     		var query = new Parse.Query(Parse.User);
-			// query.get(app.loginedUser.id).then(function (user) {
-			//     app.loginedUser = user;
 			    if(app.loginedUser.get('inited')) {
 			    	app.setAppLocale(app.loginedUser.get('locale'));
 			    	app.applicationView.render();
@@ -114,22 +102,16 @@ var s, app = {
 			    else {
 			    	app.userManager.initNewUser();
 			    }
-			// }, function (error) {
-			//     console.log(error);
-			// });
     	}
     	else {
     		// Anonymous user;
     		var userID = 'auto'
-    		try {
-    			_gaq.push(['_setCustomVar', 1, 'User', 'Anonymous']);
-			} catch (e) {}
+    		app.google.analytics.setUserSegment(null);
 	    	app.applicationView.render();
 	    	app.router = new app.AppRouter();
 			Backbone.history.start();
     	}
-    	ga('create', s.analytics, userID);
-	    ga('send', 'pageview');
+    	app.google.analytics.start(userID);
     },
     setAppLocale: function(localeCode) {
     	if(!localeCode) {
@@ -620,12 +602,12 @@ var s, app = {
 
 					this.set('labels', []);
 
-					var user = new Parse.User(); //TODO csinalni meg nemet admin usert
-					if (app.localeCode=='hu') {
-						user.id = 'KiswlE2QF5';
+					var user = new Parse.User(); 
+					if (app.localeUsers[app.localeCode]) {
+						user.id = app.localeUsers[app.localeCode];
 					}
 					else {
-	 					user.id ='BoInDweJu3';
+						user.id = app.localeUsers['en'];	
 					}
 					app.labelManager.loadLabels(user);
 				}
@@ -727,26 +709,30 @@ var s, app = {
 			    	}
 				}
 
+				// labels
+		    	var labels = this.get('labels');
+		    	$('.app-navigation').find('.label').removeClass('mdl-color-text--light-green-400');
+		    	$('.app-navigation').find('.label').addClass('mdl-color-text--light-green-900');
+				var labelsId = [];
+				if ( Array.isArray(labels) && labels.length ) {
+					for (var i = 0; i < labels.length; i++) {
+						var labelId = (labels[i].id)?labels[i].id:labels[i];
+						labelsId.push( labelId );
+						gaKeywords += "+label:"+labels[i].get('name');  // TODO
+						$('.label-'+labelId).addClass('mdl-color-text--light-green-400');
+						$('.label-'+labelId).removeClass('mdl-color-text--light-green-900');
+					};
+					navigationParams.push('l='+labelsId.join(','));
+				}
+
 				if( this.get('user') != null ) {
 					gaKeywords += '+user'+this.get('user').id;
-					// labels
-			    	var labels = this.get('labels');
-			    	$('.app-navigation').find('.label').removeClass('mdl-color-text--light-green-400');
-			    	$('.app-navigation').find('.label').addClass('mdl-color-text--light-green-900');
-					if ( Array.isArray(labels) && labels.length ) {
-						var ids = [];
-						for (var i = 0; i < labels.length; i++) {
-							var labelId = (labels[i].id)?labels[i].id:labels[i];
-							ids.push( labelId );
-							gaKeywords += "+label:"+labels[i].get('name');  // TODO
-							$('.label-'+labelId).addClass('mdl-color-text--light-green-400');
-							$('.label-'+labelId).removeClass('mdl-color-text--light-green-900');
-						};
-						this.qRecipe.containsAll("labelsId", ids);  // AND
-						// this.qRecipe.containedIn("labelsId", ids); //OR
 
-						navigationParams.push('l='+ids.join(','));
+					//labels
+					if (labelsId.length>0) {
+						this.qRecipe.containsAll("labelsId", labelsId);  // AND
 					}
+					// this.qRecipe.containedIn("labelsId", ids); //OR
 
 					// user
 					this.qRecipe.equalTo('user', this.get('user'));
@@ -1586,6 +1572,7 @@ var s, app = {
 		className : 'navigation__link',
 		events : {
 			'click span'          : 'onSelect',
+			'click i'             : 'onSelect',
 			'click .delete-label' : 'onDelete'
 		},
 		initialize: function() {
@@ -1764,6 +1751,11 @@ var s, app = {
 
 
 // Translation DICT ========================================================================================================
+	app.localeUsers = {
+		'en': 'BoInDweJu3',
+		'hu': 'KiswlE2QF5',
+		'de': 'gZuDzMPaSh'
+	};
 	app.localeDicts = {
 		'en' : {
 			'All'                     : 'All',
@@ -2115,31 +2107,6 @@ var s, app = {
 		}
 	}
 
-// CROME EXTENSION ========================================================================================================
-	app.chrome = {
-		extLogin: function() {
-			try {
-				var userKey = Parse._getParsePath(Parse.User._CURRENT_USER_KEY)
-				var user = Parse.User.current();
-				var json = user.toJSON();
-				json._id = user.id;
-				json._sessionToken = user._sessionToken;
-				var userVal = JSON.stringify(json)
-				var installKey = Parse._getParsePath('installationId')
-				var installVal = Parse._installationId
-
-				chrome.runtime.sendMessage( 'iehpofechmihgfphjmggfieaoandaena', { 
-					type: 'login', 
-					userKey: userKey, 
-					userVal: userVal,
-					installKey: installKey,
-					installVal: installVal
-				}, function(response) {
-				  console.log(response);
-				});
-			} catch (e) {}
-		}
-	}
 // Facebook ==================================================================================================================
 	app.facebook = {
 		login: function() {
@@ -2268,6 +2235,24 @@ var s, app = {
 // Google ==================================================================================================================
 	app.google = {}
 	app.google.analytics = {
+		start: function(userID) {
+			try {
+				ga('create', s.analytics, userID);
+			    ga('send', 'pageview');
+			} catch (e) {}
+		},
+		setUserSegment: function(user) {
+			try {
+				if(user==null) {
+					_gaq.push(['_setCustomVar', 1, 'User', 'Anonymous']);
+				} else if(user.id == 'DPjbxTdjZW') {
+    				_gaq.push(['_setCustomVar', 1, 'User', 'Developer']);
+	    		}
+	    		else {
+	    			_gaq.push(['_setCustomVar', 1, 'User', 'Registred']);
+	    		}
+			} catch (e) {}
+		},
 		sendEvent: function(eventCategory, eventAction, eventLabel) {
 			try {
 				ga('send', {
@@ -2299,3 +2284,27 @@ var s, app = {
 		    } catch (e) {}
 		}
 	} // app.google.analytics
+	app.google.chrome = {
+		extLogin: function() {
+			try {
+				var userKey = Parse._getParsePath(Parse.User._CURRENT_USER_KEY)
+				var user = Parse.User.current();
+				var json = user.toJSON();
+				json._id = user.id;
+				json._sessionToken = user._sessionToken;
+				var userVal = JSON.stringify(json)
+				var installKey = Parse._getParsePath('installationId')
+				var installVal = Parse._installationId
+
+				chrome.runtime.sendMessage( 'iehpofechmihgfphjmggfieaoandaena', { 
+					type: 'login', 
+					userKey: userKey, 
+					userVal: userVal,
+					installKey: installKey,
+					installVal: installVal
+				}, function(response) {
+				  console.log(response);
+				});
+			} catch (e) {}
+		}
+	} //app.google.chrome
