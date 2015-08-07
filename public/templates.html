@@ -247,30 +247,17 @@
         </header>
         <nav class="app-navigation mdl-navigation mdl-color--light-green-800">
 
-          <a class="cmdListAllRecipes mdl-navigation__link topnav" href=""><i class="mdl-color-text--light-green-400 material-icons">cloud</i><%_ All %></a>
-          <a class="cmdListMyRecipes mdl-navigation__link topnav" href=""><i class="mdl-color-text--light-green-900 material-icons">face</i><%_ My %></a>
-          <a class="cmdListFavoritedRecipes mdl-navigation__link topnav" href=""><i class="mdl-color-text--light-green-900 material-icons">favorite</i><%_ Favorites %></a>
-          <a class="cmdListFollowedPeople mdl-navigation__link topnav" href=""><i class="mdl-color-text--light-green-900 material-icons">people</i><%_ FavoritedPeople %></a>
-
-          <div id="FollowedPeoplePlaceholder" class="hide"></div>
-          
           <div id="LabelGroupsViewPlaceholder"></div>
-          <a  class="mdl-navigation__link topnav createLabelgroup <% if(user==null) { %>hidden<% } %>"><i class="material-icons">add_circle</i><input type='text' id='newLabelgroup' class='labelgroup' placeholder="<%_ CreateLabelGroup %>"/></a>
+          <a  class="topnav createLabelgroup <% if(user==null) { %>hidden<% } else { %>mdl-navigation__link<% } %>"><i class="material-icons">add_circle</i><input type='text' id='newLabelgroup' class='labelgroup' placeholder="<%_ CreateLabelGroup %>"/></a>
 
           <div class="mdl-layout-spacer"></div>
-          
-          <!-- <a class="help" href=""><i class="mdl-color-text--light-green-900 material-icons">help_outline</i></a> -->
-          <button id="btnLng" class="pull-right mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--icon">
-            <%= currentLocale %>
-          </button>
-          <ul class="mdl-menu mdl-menu--top-left mdl-js-menu mdl-js-ripple-effect" for="btnLng">
-            <button class="mdl-menu__item changeLang" data='en'>en</button>
-            <button class="mdl-menu__item changeLang" data='de'>de</button>
-            <button class="mdl-menu__item changeLang" data='hu'>hu</button>
-          </ul>          
-          <a class="btnSignIn btn btn-block btn-social btn-facebook <% if(user) { %>hidden<% } %>">
-            <i class="fa fa-facebook"></i> Sign in with Facebook
-          </a>
+
+          <a class="cmdListAllRecipes mdl-navigation__link topnav" href=""><i class="mdl-color-text--light-green-400 material-icons">cloud</i><%_ All %></a>
+          <a class="cmdListFollowedPeople mdl-navigation__link topnav" href=""><i class="mdl-color-text--light-green-900 material-icons">people</i><%_ FavoritedPeople %></a>
+          <div id="FollowedPeoplePlaceholder" class="hide"></div>
+          <a class="cmdListFavoritedRecipes mdl-navigation__link topnav" href=""><i class="mdl-color-text--light-green-900 material-icons">favorite</i><%_ Favorites %></a>
+          <!-- <a class="cmdListMyRecipes mdl-navigation__link topnav" href=""><i class="mdl-color-text--light-green-900 material-icons">face</i><%_ My %></a> -->
+
           <div class='loginedUser mdl-color--teal-900 <% if(user==null) { %>hidden<% } %>'>
             <img src="<% if(user){ print(user.avatar) } else { print('images/user.jpg') } %>" class="app-avatar" />
             <span class='app-user-name'><% if(user) { print(user.name) } %> </span>
@@ -281,7 +268,20 @@
               <button class="mdl-menu__item btnLogout"><%_ Logout %></button>
             </ul>
           </div> 
-
+          <div class='mdl-color--teal-900'>
+            <a class="help" href=""><i class="material-icons">help_outline</i></a>
+            <button id="btnLng" class="pull-right mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--icon">
+              <%= currentLocale %>
+            </button>
+            <ul class="mdl-menu mdl-menu--top-right mdl-js-menu mdl-js-ripple-effect" for="btnLng">
+              <button class="mdl-menu__item changeLang" data='en'>en</button>
+              <button class="mdl-menu__item changeLang" data='de'>de</button>
+              <button class="mdl-menu__item changeLang" data='hu'>hu</button>
+            </ul>          
+          </div>
+          <a class="btnSignIn btn btn-block btn-social btn-facebook <% if(user) { %>hidden<% } %>">
+            <i class="fa fa-facebook"></i> Sign in with Facebook
+          </a>
         </nav>
       </div>
       <main class="mdl-layout__content mdl-color--grey-100">

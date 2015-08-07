@@ -28,15 +28,15 @@ var s, app = {
 		applicationUrl   : 'http://www.justfoodyou.com/'
     },
     templates: {
-    	'application'          : '#application-tmpl',
-		'viewRecipe'           : '#viewRecipe-tmpl',
-		'editRecipe'           : '#editRecipe-tmpl',
-		'recipeListItem'       : '#recipeListItem-tmpl',
-		'navigationLabel'      : '#navigationLabel-tmpl',
-		'navigationLabelGroup' : '#navigationLabelGroup-tmpl',
-		'followedUserList'	   : '#followedUserList-tmpl',
-		'followedUserItem'	   : '#followedUserItem-tmpl',
-		'googleAdsCard'		   : '#googleAdsCard-tmpl'
+  //   	'application'          : '#application-tmpl',
+		// 'viewRecipe'           : '#viewRecipe-tmpl',
+		// 'editRecipe'           : '#editRecipe-tmpl',
+		// 'recipeListItem'       : '#recipeListItem-tmpl',
+		// 'navigationLabel'      : '#navigationLabel-tmpl',
+		// 'navigationLabelGroup' : '#navigationLabelGroup-tmpl',
+		// 'followedUserList'	   : '#followedUserList-tmpl',
+		// 'followedUserItem'	   : '#followedUserItem-tmpl',
+		// 'googleAdsCard'		   : '#googleAdsCard-tmpl'
     },
     labelCollection: null,
     loginedUser: null, //User.labelCollection = null
@@ -45,14 +45,14 @@ var s, app = {
 	editRecipeView: null,
 	recipeListView: null,
     init: function() {
-        s = this.settings, this.initalizers();
+        s = this.settings;
+        this.loadRemoteTemplates();
     },
     initalizers: function() {
     	window.location.hash = window.location.hash.replace(/#!/, '#');
     	this.setAppLocale();
-    	this.loadTemplates();
+    	// this.loadTemplates();
 		this.applicationView  = new this.ApplicationView();
-
 		this.loginedUser = null;
     	this.facebookUser = null;
 
@@ -81,6 +81,7 @@ var s, app = {
 		this.listedRecipes = new Parse.Collection( [], { model : this.Recipe } );
 		this.recipesFiltermanager = new this.RecipesFiltermanager();
 		this.recipesFiltermanagerView = new this.RecipesFiltermanagerView({model: this.recipesFiltermanager});
+		app.recipesFiltermanager.set({user: null}, {validate: true});
 
 		//start
 		if (Parse.User.current()) {
@@ -96,7 +97,7 @@ var s, app = {
 			    	app.applicationView.render();
 			    	app.router = new app.AppRouter();
 					Backbone.history.start();
-			    	app.labelManager.loadLabels(app.loginedUser);
+			    	app.labelManager.loadLabels(app.loginedUser, false);
 			    	app.userManager.loadFavoritedRecipes();
 			    	app.userManager.loadFollowedUsers();
 			    }
@@ -145,6 +146,20 @@ var s, app = {
     	else {
     		location.reload();
     	}
+    },
+    loadRemoteTemplates: function(callback) {
+		$.ajax({
+	        type: "GET",
+	        url: "templates.html",
+	        success: function(data) {
+				_.each($.parseHTML(data), function(item){
+					if(item.id){
+						app.templates[item.id] = $(item).html()
+					}
+				})
+				app.initalizers();
+			}
+		})
     },
     loadTemplates: function() {
     	_.each(this.templates, function(item, key){
@@ -202,12 +217,15 @@ var s, app = {
 					else {
 						$('header .add-favorite i').text('favorite_border');
 					}
+
+					// app.labelManager.renderLabels();
 					app.google.analytics.pageview(filteredUser.getRelativeUrl(), filteredUser.get('name')+"'s recipes");
 		    	}
 		    	else {
 		    		app.router.navigate( "/", { trigger: false } );
 		    		$('.mdl-layout-title').html('');	
 		    		$('header .add-favorite i').text(''); 
+		    		// app.labelManager.renderLabels();
 		    	}
 		    	break;
 		    case 'view':
@@ -222,6 +240,7 @@ var s, app = {
 				else {
 					$('header .add-favorite i').text('favorite_border');
 				}
+				// app.labelManager.renderLabels();
 				app.google.analytics.pageview(app.recipeView.model.getRelativeUrl(), app.recipeView.model.get('name'));
 		    	break;	
 	    	case 'edit':
@@ -453,31 +472,34 @@ var s, app = {
 			app.recipeListView.render();
 		},
 		print: function(recipe) {
-			window.open('/print/#recipe/_'+app.utils.genUrlName(recipe.get('name'))+'-'+recipe.id);
+			window.open('/?_escaped_fragment_=recipe/_'+app.utils.genUrlName(recipe.get('name'))+'-'+recipe.id);
 			app.google.analytics.sendEvent('recipe', 'print', 'print');
 		},
-		sendToKindle: function() {
-	        window.readabilityToken = '';
-	        var s = document.createElement('script');
-	        s.setAttribute('type', 'text/javascript');
-	        s.setAttribute('charset', 'UTF-8');
-	        s.setAttribute('src', '//www.readability.com/bookmarklet/send-to-kindle.js');
-	        document.documentElement.appendChild(s);
+		sendToKindle: function(recipe) {
+			window.open('/?_escaped_fragment_=recipe/_'+app.utils.genUrlName(recipe.get('name'))+'-'+recipe.id+'#sendToKindle');
+	        // window.readabilityToken = '';
+	        // var s = document.createElement('script');
+	        // s.setAttribute('type', 'text/javascript');
+	        // s.setAttribute('charset', 'UTF-8');
+	        // s.setAttribute('src', '//www.readability.com/bookmarklet/send-to-kindle.js');
+	        // document.documentElement.appendChild(s);
 	        app.google.analytics.sendEvent('recipe', 'sendToKindle', 'sendToKindle');
 		}
 	} // app.recipeManager
 
 	app.labelManager = {
-		loadLabels: function(filterUser) {
+		loadLabels: function(filterUser, renderLabels) {
 	    	var labelGroupQuery = new Parse.Query(app.LabelGroup);
 			labelGroupQuery.equalTo("user", filterUser);
 			labelGroupQuery.ascending('weight');
 			labelGroupQuery.find({
 				success: function(labelgroups) {
-					app.labelGroupCollection = new Parse.Collection(labelgroups, {model: app.LabelGroup});
 					
 					if (app.loginedUser && labelgroups.length && ( labelgroups[0].get('user').id == app.loginedUser.id  )) {
 						app.loginedUser.labelGroups = new Parse.Collection(labelgroups, {model: app.LabelGroup});
+					}
+					else {
+						app.labelGroupCollection = new Parse.Collection(labelgroups, {model: app.LabelGroup});
 					}
 
 					var labelQuery = new Parse.Query(app.Label);
@@ -486,18 +508,34 @@ var s, app = {
 		    		labelQuery.limit(300)
 		    		labelQuery.find({
 		    			success: function(labels) {
-							$(app.NavigationLabelGroupView.prototype.el).empty(); //#LabelGroupsViewPlaceholder'
-		    				app.labelCollection = new Parse.Collection(labels, {model: app.Label});
-		    				var navigationLabelGroupView = new app.NavigationLabelGroupView({collection: app.labelGroupCollection});
 		    				app.recipesFiltermanager.set('labels',[]);
-
 		    				if (app.loginedUser && labels.length && ( labels[0].get('user').id == app.loginedUser.id  )) {
 								app.loginedUser.labelCollection = new Parse.Collection(labels, {model: app.Label});
+							}
+							else {
+			    				app.labelCollection = new Parse.Collection(labels, {model: app.Label});
+							}
+							if (renderLabels) {
+								app.labelManager.renderLabels();
 							}
 		    			}
 		    		});
 				}
 			});
+	    },
+	    renderLabels: function() {
+			$(app.NavigationLabelGroupView.prototype.el).empty(); //#LabelGroupsViewPlaceholder'
+			if (app.loginedUser && app.recipesFiltermanager.get('user') && 
+				app.recipesFiltermanager.get('user').id == app.loginedUser.id) {
+				if (app.loginedUser.labelGroups) {
+					app.navigationLabelGroupView = new app.NavigationLabelGroupView({collection: app.loginedUser.labelGroups});
+				}
+			}
+			else {
+				if (app.labelGroupCollection) {
+					app.navigationLabelGroupView = new app.NavigationLabelGroupView({collection: app.labelGroupCollection});	
+				}
+			}
 	    },
 	    createLabelgroup: function(newGroupName) {
 			var newGroup = new app.LabelGroup();
@@ -522,7 +560,7 @@ var s, app = {
 							openedGroups.push(newGroup.id);
 							$.cookie('expandedLabelGroups', openedGroups);
 						}
-				        app.labelManager.loadLabels(app.loginedUser);
+				        app.labelManager.loadLabels(app.loginedUser, true);
 				        $(event.target).val('');
 	        		}
 	        	}
@@ -546,7 +584,7 @@ var s, app = {
 
 	        newLabel.save({
 	        	success: function() {
-			        app.labelManager.loadLabels(app.loginedUser);
+			        app.labelManager.loadLabels(app.loginedUser, true);
 	        	}
 	        });
 	        app.google.analytics.sendEvent('label', 'create', 'create');
@@ -555,7 +593,7 @@ var s, app = {
 	    	app.google.analytics.sendEvent('label', 'delete', label.get('name'));
 			label.destroy({
 				success: function() {
-					app.labelManager.loadLabels(app.loginedUser);
+					app.labelManager.loadLabels(app.loginedUser, true);
 				}
 			});
 	    }
@@ -590,7 +628,7 @@ var s, app = {
 				if(attrs.user) {
 					$('.filter-user-avatar').attr('src',attrs.user.get('avatar'));
 					$('.filter-user-name').html(attrs.user.get('name'));
-					app.labelManager.loadLabels(attrs.user);
+					app.labelManager.loadLabels(attrs.user, true);
 					
 					this.set('favorites', false);
 					this.set('text','');
@@ -610,7 +648,7 @@ var s, app = {
 					else {
 						user.id = app.localeUsers['en'];	
 					}
-					app.labelManager.loadLabels(user);
+					app.labelManager.loadLabels(user, true);
 				}
 			}
 	  	},
@@ -677,6 +715,7 @@ var s, app = {
 	    	$('.app-navigation').find('.cmdListFavoritedRecipes i').addClass('mdl-color-text--light-green-900');
 
 	    	$('.createLabelgroup').addClass('hidden');
+	    	$('.createLabelgroup').removeClass('mdl-navigation__link');
 
 			if (this.get('favorites')) {
 				$('.app-navigation').find('.cmdListFavoritedRecipes i').addClass('mdl-color-text--light-green-400');
@@ -741,6 +780,7 @@ var s, app = {
 						$('.app-navigation').find('.cmdListMyRecipes i').addClass('mdl-color-text--light-green-400');
 				    	$('.app-navigation').find('.cmdListMyRecipes i').removeClass('mdl-color-text--light-green-900');
 				    	$('.createLabelgroup').removeClass('hidden');
+				    	$('.createLabelgroup').addClass('mdl-navigation__link');
 					}
 					else {
 						$('.app-navigation').find('.cmdListAllRecipes i').addClass('mdl-color-text--light-green-400');
@@ -832,6 +872,7 @@ var s, app = {
 			})
 		},
 		recipe: function(name, rid) {
+			app.recipesFiltermanager.set({user: null}, {validate: true});
 			var rQuery = new Parse.Query(app.Recipe);
 			rQuery.equalTo('objectId',rid);
 			// include
@@ -844,6 +885,7 @@ var s, app = {
 			})
 		},
 		search: function(search) {
+			app.recipesFiltermanager.set({user: null}, {validate: true});
 			// u=dasda&l=sdsada,dsadas,dsada&f&a   =>  u=user l=labels f=favorites a=all
 			var params = search.split('&');
 			for (var i = 0; i < params.length; i++) {
@@ -924,7 +966,6 @@ var s, app = {
 			}
 			var html = $(this.template({user:user, currentLocale:app.localeCode }));
 			this.$el.html(html);
-			componentHandler.upgradeAllRegistered();
 
 			$('#btnLng').text(app.localeCode);
 			return this;
@@ -1121,7 +1162,7 @@ var s, app = {
 			app.recipeManager.print(this.model);
 		},
 		onKindle: function() {
-			app.recipeManager.sendToKindle();
+			app.recipeManager.sendToKindle(this.model);
 		},
 		onAuthor: function() {
 			app.router.navigate(this.model.get('user').getRelativeUrl(), {trigger: true});
@@ -1370,7 +1411,7 @@ var s, app = {
 
 				function saveSuccess() {
 					app.editRecipeView.model.get('user').fetch();
-			    	app.labelManager.loadLabels(app.loginedUser);
+			    	app.labelManager.loadLabels(app.loginedUser, true);
 				    app.spinnerStop();
 					app.recipeManager.viewRecipe(app.editRecipeView.model);
 					if (app.recipeListView) {
@@ -1597,7 +1638,7 @@ var s, app = {
 			app.google.analytics.sendEvent('label', 'delete', this.model.get('name'));
 			this.model.destroy({
 				success: function() {
-					app.labelManager.loadLabels(app.loginedUser);
+					app.labelManager.loadLabels(app.loginedUser, true);
 				}
 			});
 			this.close();
@@ -1696,7 +1737,12 @@ var s, app = {
 			var html = this.template({id: this.model.id, labelgroup: this.model.toJSON(), owner: owner});
 			this.$el.append(html);
 
-			var labels = app.labelCollection;
+			if(owner) {
+				var labels = app.loginedUser.labelCollection;
+			}
+			else {
+				var labels = app.labelCollection;
+			}
 			for (var i = labels.models.length - 1; i >= 0; i--) {
 				if (labels.models[i].get('labelgroup').id == this.model.id) {
 					var navigationLabelView = new app.NavigationLabelView({model:labels.models[i]});
@@ -1718,7 +1764,7 @@ var s, app = {
 			app.google.analytics.sendEvent('labelgroup', 'delete', this.model.get('name'));
 			this.model.destroy({
 				success: function() {
-					app.labelManager.loadLabels(app.loginedUser);
+					app.labelManager.loadLabels(app.loginedUser, true);
 				}
 			});
 			this.close();

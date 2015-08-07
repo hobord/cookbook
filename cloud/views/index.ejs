@@ -98,32 +98,37 @@
 
   </head>
   <body>
-    
+    <div id="fb-root"></div>
     <script src="//storage.googleapis.com/code.getmdl.io/1.0.0/material.min.js"></script>
     <script type="text/javascript">
       Parse.initialize(app.settings.applicationId, app.settings.applicationKey);
       window.fbAsyncInit = function() {
           Parse.FacebookUtils.init({ // this line replaces FB.init({
             appId      : app.settings.facebookAppId, // Facebook App ID
-            status     : true,  // check Facebook Login status
+            // status     : false,  // check Facebook Login status
             cookie     : true,  // enable cookies to allow Parse to access the session
             xfbml      : true,  // initialize Facebook social plugins on the page
             version    : 'v2.3' // point to the latest Facebook Graph API version
           });
+          FB.getLoginStatus();
       }
     </script>
-    <script type="text/javascript" src="//connect.facebook.net/en_US/sdk.js"></script>
+    <!-- <script type="text/javascript" src="//connect.facebook.net/en_US/sdk.js"></script> -->
     <script type="text/javascript">
-      // (function(d, s, id){
-      //   var js, fjs = d.getElementsByTagName(s)[0];
-      //   if (d.getElementById(id)) {return;}
-      //   js = d.createElement(s); js.id = id;
-      //   // js.src = "//connect.facebook.net/en_US/sdk/debug.js";
-      //   js.src = "//connect.facebook.net/en_US/sdk.js";
-      //   fjs.parentNode.insertBefore(js, fjs);
-      // }(document, 'script', 'facebook-jssdk'));
+
+      (function(d, s, id){
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) {return;}
+        js = d.createElement(s); js.id = id;
+        // js.src = "//connect.facebook.net/en_US/sdk/debug.js";
+        js.src = "//connect.facebook.net/en_US/sdk.js";
+        fjs.parentNode.insertBefore(js, fjs);
+      }(document, 'script', 'facebook-jssdk'));
       // Parse.FacebookUtils.init();
-      app.init();
+      
+      $(function() {
+        app.init();
+      });
     </script>
   </body>
 </html>
