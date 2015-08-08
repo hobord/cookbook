@@ -81,7 +81,8 @@ var s, app = {
 		this.listedRecipes = new Parse.Collection( [], { model : this.Recipe } );
 		this.recipesFiltermanager = new this.RecipesFiltermanager();
 		this.recipesFiltermanagerView = new this.RecipesFiltermanagerView({model: this.recipesFiltermanager});
-		app.recipesFiltermanager.set({user: null}, {validate: true});
+		app.recipesFiltermanager.setUserFilter(null);
+		// app.recipesFiltermanager.set({user: null}, {validate: true});
 
 		//start
 		if (Parse.User.current()) {
@@ -624,32 +625,32 @@ var s, app = {
 		    		$('.app-header .mdl-textfield--expandable').removeClass('is-focused');	
 	    		}
 	    	}
-	    	if ( _.has(attrs,"user") ) {
-				if(attrs.user) {
-					$('.filter-user-avatar').attr('src',attrs.user.get('avatar'));
-					$('.filter-user-name').html(attrs.user.get('name'));
-					app.labelManager.loadLabels(attrs.user, true);
-					
-					this.set('favorites', false);
-					this.set('text','');
-					$('#search').val('');
-					$('.app-header .mdl-textfield--expandable').removeClass('is-focused');
+	  	},
+	  	setUserFilter: function(user) {
+	  		this.set('user', user);
+	  		// this.set('labels', []);
+	  		if(user) {
+				$('.filter-user-avatar').attr('src',user.get('avatar'));
+				$('.filter-user-name').html(user.get('name'));
+				app.labelManager.loadLabels(user, true);
+				
+				this.set('favorites', false);
+				this.set('text','');
+				$('#search').val('');
+				$('.app-header .mdl-textfield--expandable').removeClass('is-focused');
+			}
+			else {
+				$('.filter-user-avatar').attr('src','/icon_512.png');
+				$('.filter-user-name').html(app.localeDict('AllinJustFoodYou'));
+
+				var user = new Parse.User(); 
+				if (app.localeUsers[app.localeCode]) {
+					user.id = app.localeUsers[app.localeCode];
 				}
 				else {
-					$('.filter-user-avatar').attr('src','/icon_512.png');
-					$('.filter-user-name').html(app.localeDict('AllinJustFoodYou'));
-
-					this.set('labels', []);
-
-					var user = new Parse.User(); 
-					if (app.localeUsers[app.localeCode]) {
-						user.id = app.localeUsers[app.localeCode];
-					}
-					else {
-						user.id = app.localeUsers['en'];	
-					}
-					app.labelManager.loadLabels(user, true);
+					user.id = app.localeUsers['en'];	
 				}
+				app.labelManager.loadLabels(user, true);
 			}
 	  	},
 		addLabel: function(label) {
@@ -657,7 +658,6 @@ var s, app = {
 			var index = _.indexOf(labels, label);
 			if (index == -1) {
 				labels.push(label);
-				// this.set( { labels: labels }, { validate:true } );
 				this.set( { labels: labels } );
 			}
 			this.setAllinJustFoodYouAcces(false);
@@ -668,7 +668,6 @@ var s, app = {
 			if (index != -1) {
 				labels.splice(index, 1);
 			}
-			// this.set( { labels: labels }, { validate:true } );
 			this.set( { labels: labels } );
 		},
 		toggleLabel: function(label) {
@@ -690,7 +689,6 @@ var s, app = {
 					this.set({text:str}, {validate:true});
 				}
 			}
-			// this.set( { labels: labels }, { validate:true } );
 			this.set( { labels: labels } );
 		},
 		toggleFavoritest: function() {
@@ -864,13 +862,13 @@ var s, app = {
 			var uQuery = new Parse.Query(Parse.User);
 			uQuery.equalTo('objectId',uid);
 			uQuery.find().then(function (list) {
-				app.recipesFiltermanager.set( { user: list[0] }, { validate: true } );
+				app.recipesFiltermanager.setUserFilter(list[0]);
 				app.switchLayout('list');
 				app.recipesFiltermanager.search();
 			})
 		},
 		recipe: function(name, rid) {
-			app.recipesFiltermanager.set({user: null}, {validate: true});
+			app.recipesFiltermanager.setUserFilter(null);
 			var rQuery = new Parse.Query(app.Recipe);
 			rQuery.equalTo('objectId',rid);
 			// include
@@ -883,20 +881,20 @@ var s, app = {
 			})
 		},
 		search: function(search) {
-			app.recipesFiltermanager.set({user: null}, {validate: true});
+			app.recipesFiltermanager.setUserFilter(null);
 			// u=dasda&l=sdsada,dsadas,dsada&f&a   =>  u=user l=labels f=favorites a=all
 			var params = search.split('&');
 			for (var i = 0; i < params.length; i++) {
 				var param = params[i].split('=');
 				if (param[0] == 'u') {
-					app.recipesFiltermanager.set( { user: param[1] }, { validate: true } );
+					app.recipesFiltermanager.setUserFilter(param[1]);
 				}
 				if (param[0] == 'l') {
 					var labelIds = param[1].split(','); 
 					app.recipesFiltermanager.set( { labels: labelIds }, { validate: true } );
 				}
 				if (param[0] == 'a') {
-					app.recipesFiltermanager.set( { user: null }, { validate: true } );
+					app.recipesFiltermanager.setUserFilter(null);
 				}
 				if (param[0] == 'f') {
 					app.recipesFiltermanager.set( { favorites: true }, { validate: true } );
@@ -912,7 +910,7 @@ var s, app = {
 				var uQuery = new Parse.Query(Parse.User);
 				uQuery.equalTo('objectId',uid);
 				uQuery.find().then(function (list) {
-					app.recipesFiltermanager.set( {user : list[0] }, { validate: true } );
+					app.recipesFiltermanager.setUserFilter(list[0]);
 					app.switchLayout('list');
 					app.recipesFiltermanager.search();
 				})
@@ -927,7 +925,8 @@ var s, app = {
 		},
 		defaultRoute: function(argument) {
 			app.switchLayout('list');
-			app.recipesFiltermanager.set({user: null}, {validate: true});
+			app.recipesFiltermanager.setUserFilter(null);
+			// app.recipesFiltermanager.set({user: null}, {validate: true});
 			app.recipesFiltermanager.search();
 		}
 	});
@@ -985,10 +984,11 @@ var s, app = {
 		},
 		onGoProfile: function(event) {
 			if(app.recipesFiltermanager.get('user')) {
-				if (app.recipesFiltermanager.get('user').get('profileLink')) {
-					app.google.analytics.sendEvent('user', 'facebookProfile', 'show facebook profile');
-					window.open(app.recipesFiltermanager.get('user').get('profileLink'));
-				}
+				app.router.navigate(app.recipesFiltermanager.get('user').getRelativeUrl(), {trigger: true});
+				// if (app.recipesFiltermanager.get('user').get('profileLink')) {
+				// 	app.google.analytics.sendEvent('user', 'facebookProfile', 'show facebook profile');
+				// 	window.open(app.recipesFiltermanager.get('user').get('profileLink'));
+				// }
 			}
 		},
 		onAddFavorite: function(event) {
@@ -1061,7 +1061,7 @@ var s, app = {
 		},
 		listMyRecipes: function(e) {
 			if (app.loginedUser) {
-				app.recipesFiltermanager.set( { user: app.loginedUser }, { validate:true } );
+				app.recipesFiltermanager.setUserFilter(app.loginedUser);
 				app.recipesFiltermanager.set('favorites', false);
 				app.switchLayout('list');
 				app.recipesFiltermanager.search();
@@ -1082,9 +1082,8 @@ var s, app = {
 			return false;
 		},
 		listAllRecipes: function() {
+			app.recipesFiltermanager.setUserFilter(null);
 			app.recipesFiltermanager.set( { 
-				user: null, 
-				labels: null,
 				favorites: false,
 				text: ''
 			}, { validate:true } );
@@ -1096,7 +1095,7 @@ var s, app = {
 		},
 		listFavoritedRecipes: function(e) {
 			if (app.loginedUser) {
-				app.recipesFiltermanager.set( { user: null }, { validate:true } );
+				app.recipesFiltermanager.setUserFilter(null);
 				app.recipesFiltermanager.set('favorites', true);
 				app.router.navigate("/", {trigger: false});
 				app.switchLayout('list');
@@ -1674,7 +1673,7 @@ var s, app = {
 			return this;
 		},
 		doFilter: function(event) {
-			app.recipesFiltermanager.set({user: this.model}, { validate: true } );
+			app.recipesFiltermanager.setUserFilter(this.model)
 			app.recipesFiltermanager.search();
 			app.switchLayout('list');
 		}
@@ -2303,12 +2302,12 @@ var s, app = {
 		setUserSegment: function(user) {
 			try {
 				if(user==null) {
-					_gaq.push(['_setCustomVar', 1, 'User', 'Anonymous']);
+					ga('set', 'dimension1', 'Anonymous');
 				} else if(user.id == 'DPjbxTdjZW') {
-    				_gaq.push(['_setCustomVar', 1, 'User', 'Developer']);
+					ga('set', 'dimension1', 'Developer');
 	    		}
 	    		else {
-	    			_gaq.push(['_setCustomVar', 1, 'User', 'Registred']);
+	    			ga('set', 'dimension1', 'Registred');
 	    		}
 			} catch (e) {}
 		},

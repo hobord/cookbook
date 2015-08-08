@@ -357,8 +357,11 @@ div.mdl-navigation{
 	width: 90%;
 }
 
-.recipe-card-content .add-favorite i{
+.recipe-card-content .add-favorite i {
 	color: #FF6D00;
+}
+.mdl-card__menu .close i {
+  color: #FF6D00;
 }
 .recipeListItem .recipe-short-desc {
 	padding-top:0px;
