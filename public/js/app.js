@@ -28,7 +28,7 @@ var s, app = {
 		applicationUrl   : 'http://www.justfoodyou.com/'
     },
     templates: {
-  //   	'application'          : '#application-tmpl',
+		// 'application'          : '#application-tmpl',
 		// 'viewRecipe'           : '#viewRecipe-tmpl',
 		// 'editRecipe'           : '#editRecipe-tmpl',
 		// 'recipeListItem'       : '#recipeListItem-tmpl',
@@ -95,11 +95,11 @@ var s, app = {
 			    if(app.loginedUser.get('inited')) {
 			    	app.setAppLocale(app.loginedUser.get('locale'));
 			    	app.applicationView.render();
-			    	app.router = new app.AppRouter();
-					Backbone.history.start();
 			    	app.labelManager.loadLabels(app.loginedUser, false);
 			    	app.userManager.loadFavoritedRecipes();
 			    	app.userManager.loadFollowedUsers();
+			    	app.router = new app.AppRouter();
+					Backbone.history.start();
 			    }
 			    else {
 			    	app.userManager.initNewUser();
@@ -678,9 +678,8 @@ var s, app = {
 				labels.push(label);
 				this.set('allPublicAcces', false);
 				if(!this.get('user')) {
-					this.set('text',(this.get('text')+' '+label.get('name')).trim());
-					$('#search').val(this.get('text'));
-					$('.app-header .mdl-textfield--expandable').addClass('is-focused');
+					var str = (this.get('text')+' '+label.get('name')).trim();
+					this.set({ text: str }, {validate:true});
 				}
 			}
 			else {
@@ -688,9 +687,7 @@ var s, app = {
 				if(!this.get('user')) {
 					var str = this.get('text');
 					str = str.replace(new RegExp(label.get('name'), 'gi'), '').trim();
-					this.set('text',str);
-					$('#search').val(str);
-					$('.app-header .mdl-textfield--expandable').removeClass('is-focused');
+					this.set({text:str}, {validate:true});
 				}
 			}
 			// this.set( { labels: labels }, { validate:true } );
@@ -833,15 +830,15 @@ var s, app = {
 			    app.listedRecipes = new Parse.Collection(list, {model:app.Recipe});
 			    app.recipeManager.renderRecipeList(app.listedRecipes);
 			    app.spinnerStop();
-			    if(list.length) {
-			    	if(list.length == 1) {
-			    		app.recipeManager.viewRecipe(list[0]);
-			    		app.switchLayout('view');
-			    	}
-			    	else {
-					    // app.switchLayout('list');
-			    	}
-			    }
+			    // if(list.length) {
+			    // 	if(list.length == 1) {
+			    // 		app.recipeManager.viewRecipe(list[0]);
+			    // 		app.switchLayout('view');
+			    // 	}
+			    // 	else {
+					  //   // app.switchLayout('list');
+			    // 	}
+			    // }
 			}, function (error) {
 			    console.log(error);
 			});
@@ -856,6 +853,7 @@ var s, app = {
 		    "recipe/:name-:rid":	"recipe",  // show recipe
 		    "!recipe=:name-:rid":	"recipe",  // show recipe
 		    "u/:name-:uid" : 		"user",	   // list user recipes
+		    "!u/:name-:uid" : 		"user",	   // list user recipes
 		    's/:search' : 			"search", 
 		    '*path':  'defaultRoute'
 	  	},
@@ -947,6 +945,7 @@ var s, app = {
 			'click .cmdListFollowedPeople'   : 'onFollowedPeople',
 			'click .btnSignIn' 				 : 'facebookLogin',
 			'click .app-user-name'			 : 'listMyRecipes',
+			'click .chromeExt'				 : 'onChromeExt',
 			'click .btnLogout'				 : 'logout',
 			'click .changeLang'				 : 'onChangelang',
 			'click .onContact'				 : 'onContact',
@@ -968,6 +967,9 @@ var s, app = {
 			this.$el.html(html);
 
 			$('#btnLng').text(app.localeCode);
+			try {
+				componentHandler.upgradeAllRegistered(); // material design lite update components/fix sizes
+			} catch(e) {}
 			return this;
 		},
 		onChangelang: function(event) {
@@ -1018,12 +1020,19 @@ var s, app = {
 		},
 		onContact: function(event) {
 			window.open(app.settings.applicationUrl+"contact.html");
+			return false;
 		},
 		onPrivacy: function(event) {
 			window.open(app.settings.applicationUrl+"privacy.html");
+			return false;
 		},
 		onAbout: function(event) {
 			window.open(app.settings.applicationUrl+"about.html");
+			return false;
+		},
+		onChromeExt: function(event) {
+			window.open("https://chrome.google.com/webstore/detail/just-food-you-clipper/jehllbcgafncimgnhmnimpolkbjpglkd");
+			return false;
 		},
 		createLabelgroup: function(event) {
 			if(event.keyCode == 13) {
@@ -1302,7 +1311,9 @@ var s, app = {
 			        cleanTags: ['meta', 'script', 'img']
 			    }
 			});
-
+			try {
+				componentHandler.upgradeAllRegistered(); // material design lite update components/fix sizes
+			} catch(e) {}
 			return this;
 		},
 		renderLabelsGroups: function() {
@@ -2344,7 +2355,8 @@ var s, app = {
 				var installKey = Parse._getParsePath('installationId')
 				var installVal = Parse._installationId
 
-				chrome.runtime.sendMessage( 'iehpofechmihgfphjmggfieaoandaena', { 
+				// chrome.runtime.sendMessage( 'iehpofechmihgfphjmggfieaoandaena', { 
+				chrome.runtime.sendMessage( 'jehllbcgafncimgnhmnimpolkbjpglkd', { 
 					type: 'login', 
 					userKey: userKey, 
 					userVal: userVal,

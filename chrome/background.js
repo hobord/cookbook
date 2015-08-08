@@ -23,7 +23,8 @@ background = {
     	chrome.runtime.onMessage.addListener( function(request, sender, callBack) {
     		switch (request.type)
 			{
-				case "l":
+				case "saveRecipe":
+					app.createRecipe(request, callBack)
 		        	return true;
 		        	break;
 	        }
@@ -49,23 +50,44 @@ app = {
 		localStorage.setItem(installKey, installVal);
 		window.location.reload();
 	},
-	createRecipe: function(data) {
-		var recipe = new app.Recipe({
-			name          : data.name, 
-			user          : app.loginedUser,
-			coverImageUrl : '', 
-			description   : data.description, 
-			ingredients   : data.ingredients, 
-			directions    : data.directions, 
-			source        : data.source	
-		})
-		recipe.makeSearchMasks();
-		recipe.setPrivateAcl();
-		recipe.save().then(function(recipe) {
-			recipe.set('coverImageUrl', recipe.getImageUrl());
-			recipe.uploadImage(data.pictureUrl);
-			recipe.save();
-		});
+	createRecipe: function(data, callBack) {
+		if (Parse.User.current()) {
+			var recipe = new app.Recipe({
+				name          : data.name, 
+				user          : Parse.User.current(),
+				coverImageUrl : data.imageUrl, 
+				// description   : data.description, 
+				ingredients   : data.ingredients, 
+				directions    : data.directions, 
+				source        : data.source	
+			})
+			recipe.makeSearchMasks();
+			recipe.setPrivateAcl();
+			recipe.save().then(function(recipe) {
+				recipe.uploadImage(recipe.get('coverImageUrl'));
+				recipe.set('coverImageUrl', recipe.getImageUrl());
+				recipe.save();
+
+				callBack({recipeId: recipe.id, recipeUrl:recipe.getUrl()})
+				chrome.windows.create({
+				    type : 'popup',
+				    url : recipe.getUrl(),
+				    type: "popup"
+				}, function(newWindow) {
+
+				});
+			});
+		}
+		else {
+			alert("please login first!");
+			chrome.windows.create({
+			    type : 'popup',
+			    url : 'http://www.justfoodyou.com',
+			    type: "popup"
+			}, function(newWindow) {
+
+			});
+		}
 	}
 }
 
@@ -123,6 +145,9 @@ app.Recipe = Parse.Object.extend("Recipe", {
 		}
 
 		this.setACL(currentACL);
+	},
+	getUrl: function() {
+		return 'http://www.justfoodyou.com'+'#!recipe/_'+app.utils.genUrlName(this.get('name'))+'-'+this.id;
 	},
 	getImageUrl: function() {
 		return 'https://s3.amazonaws.com/'+background.settings.amazonBucket+'/users/'+app.loginedUser.id+'/recipes/'+this.id+'/cover.jpg';
@@ -333,7 +358,6 @@ app.utils = {
 		})
 	}
 }
-// Parse.Cloud.run('awsInfo', {file: 'users/test.jpg', fileType: "image/jpg"}).then(function(result) {console.log(result)})
 
 Parse.initialize(background.settings.applicationId, background.settings.applicationKey);	
 background.init();

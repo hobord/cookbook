@@ -7,7 +7,6 @@ Recipe = Parse.Object.extend("Recipe", {
 // These two lines are required to initialize Express.
 var _ = require('underscore');
 var express = require('express');
-// var parseExpressHttpsRedirect = require('parse-express-https-redirect');
 var cloudApp = express();
 
 // Global cloudApp configuration section
@@ -136,8 +135,11 @@ function generate_xml_sitemap(recipes) {
     var freq = 'monthly';
     var xml = '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
     for (var i in recipes) {
+    	var d = new Date(recipes[i].updatedAt);
+
         xml += '<url>';
         xml += '<loc>'+ root_path + recipes[i].getUrl() + '</loc>';
+        xml += '<lastmod>'+d.toISOString().substring(0, 10)+'</lastmod>';
         xml += '<changefreq>'+ freq +'</changefreq>';
         xml += '<priority>'+ priority +'</priority>';
         xml += '</url>';
@@ -161,7 +163,7 @@ cloudApp.get('/', function(req, res) {
 	if (req.param("_escaped_fragment_")) {
 		var escaped_fragment = req.param("_escaped_fragment_");
 		re = /recipe\/.*-(.*)/i;
-		if ((m = re.exec(escaped_fragment)) !== null) {
+		if ((m = re.exec(escaped_fragment)) !== null) { //recipe page
 			var recipeId = m[re.lastIndex+1];
 			// res.send(recipeId);
 			var rQuery = new Parse.Query(Recipe);
@@ -177,6 +179,22 @@ cloudApp.get('/', function(req, res) {
 						recipe   : recipe.toJSON()
 				  	});
 				}
+			})
+		}
+		else {
+			//escaped index -> recipes list
+			var rQuery = new Parse.Query(Recipe);
+			rQuery.limit(1000);
+			rQuery.find().then(function(recipes) {
+				var root_path = 'http://www.justfoodyou.com/';
+				var r = [];
+				for (var i = 0; i < recipes.length; i++) {
+					r.push({
+						url: root_path + recipes[i].getUrl(),
+						name: recipes[i].get('name')
+					})
+				};
+				res.render('recipesList',{recipes: r});
 			})
 		}
 	}
@@ -206,7 +224,7 @@ cloudApp.get('/recipe', function(req, res) {
 		})
 	}
 	else {
-		res.render('recipeRedirect'); 
+		res.render('index'); 
 	}
 
 });

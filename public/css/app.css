@@ -108,6 +108,16 @@ html, body {
     font-size: 20px;
     padding-top: 6px;
 }
+
+.app-navigation .chromeExt {
+  text-align: right;
+  margin-left: 10px;
+}
+.app-navigation .chromeExt:hover{ color: rgb(255,110,64); }
+.chromeExt i.material-icons {
+    font-size: 20px;
+    padding-top: 6px;
+}
 .mdl-layout__drawer .mdl-navigation .mdl-navigation__link:hover {
     background-color: rgba(51, 105, 30, 0.52);
     text-decoration: none;
@@ -440,10 +450,10 @@ div.originalWriter img {
 #editRecipe input.time {
 	width: 40px;
 }
-#editRecipePrivate, #editRecipePostFacebook {
+/*#editRecipePrivate, #editRecipePostFacebook {
 	text-align: right;
   padding-right: 27px;
-}	
+}	*/
 .medium-editor-hidden {
     display: none !important;
 }

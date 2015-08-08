@@ -14,11 +14,10 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
 
 app = {
 	templates: {
-		'window': '#window-tmpl',
 	},
 	initialize: function() {
 		this.setAppLocale();
-		this.loadTemplates();
+		this.loadRemoteTemplates();
 		app.uploadImageUrl = '';
 		_.each(document.getElementsByTagName('img'), function(element) {
 			element.addEventListener('dragstart',function(e){
@@ -45,22 +44,22 @@ app = {
 			this.localeDict = underi18n.MessageFactory('en');
     	}
     },
-	loadTemplates: function() {
-		var iFrame  = document.createElement ("iframe");
-		iFrame.style.display = 'none';
-		iFrame.onload = function() {
-			_.each(app.templates, function(item, key){
-	    		app.templates[key] = iFrame.contentWindow.document.getElementById(item).innerHTML;
-	    	}, this);
-	    	this.remove();
-		}
-		iFrame.src  = chrome.extension.getURL("templates.html");
-
-		document.body.insertBefore(iFrame, document.body.firstChild);
-	},
+	loadRemoteTemplates: function(callback) {
+		$.ajax({
+	        type: "GET",
+	        url: chrome.extension.getURL("templates.html"),
+	        success: function(data) {
+				_.each($.parseHTML(data), function(item){
+					if(item.id){
+						app.templates[item.id] = $(item).html()
+					}
+				})
+			}
+		})
+    },
 	popUpEditor: function() {
-		if(!this.editor) {
-			this.editor = new app.EditRecipeView();
+		if(!app.editor) {
+			app.editor = new app.EditRecipeView();
 		}
 	}
 }
@@ -70,7 +69,8 @@ app = {
 app.EditRecipeView =  Backbone.View.extend({
 	tagName : 'div',
 	events:{
-		// 'click'        : 'onDiscard',
+		'click #btnEditRecipeDiscard' : 'onDiscard',
+		'click #btnEditRecipeSave'    : 'onSave',
 	},
 	initialize: function() {
 		this.template = _.template(underi18n.template(app.templates.window, app.localeDict));
@@ -78,11 +78,14 @@ app.EditRecipeView =  Backbone.View.extend({
 	},
 	render: function() {
 		this.$el.empty();
-		var html = this.template();
+		var html = this.template({
+			iconUrl:chrome.extension.getURL('icon_32.png'),
+			noImageUrl: chrome.extension.getURL('NoImage.jpg')
+		});
 		this.$el.html(html);
+		this.setDesign();
 
-
-		var dropbox = this.el.getElementsByClassName('dropbox')[0];
+		var dropbox = this.el.getElementsByClassName('JFYdropbox')[0];
 	    dropbox.addEventListener('dragenter', noopHandler, false);
 	    dropbox.addEventListener('dragexit', noopHandler, false);
 	    dropbox.addEventListener('dragover', noopHandler, false);
@@ -95,18 +98,110 @@ app.EditRecipeView =  Backbone.View.extend({
 	    function drop(evt) {
 	        evt.stopPropagation();
 	        evt.preventDefault(); 
-
-			dragSrcEl.src
+			$(this.parentElement).find('.JFYimage').attr('src',dragSrcEl.src);
+			$(this).text('');
 	    }
 
 
 		document.body.appendChild(this.el);
 		return this;
 	},
+	setDesign: function() {
+		this.$el.css({
+			position:'fixed',
+			right:'20px',
+			top:'30px',
+			width:'300px',
+			// height:'400px',
+			border:'1px solid black',
+			background:'white',
+			fontSize:'12px',
+			WebkitBorderRadius:'3px',
+			MozBorderRadius:'3px',
+			borderRadius:'3px',
+			zIndex:'999999999'
+		});
+		this.$el.find('.JFYicon').css({
+			float:'left',
+		    position:'absolute',
+		    width:'24px',
+		    marginLeft:'8px',
+		})
+		this.$el.find('title').css({
+		    fontSize:'19px',
+		    display:'block',
+		    textAlign:'center',
+		    fontFamily:'serif'
+		})
+		this.$el.find('.JFYeditRecipe').css({
+			height:'523px',
+			paddingLeft:'15px',
+			overflowY:'hidden'
+		})
+		this.$el.find('.JFYContent').css({
+			height:'325px',
+			overflowY:'scroll'
+		})
+		this.$el.find('.JFYimgCont').css({
+			width:'200px',
+		    margin:'auto',
+		    display:'block'
+		})
+		this.$el.find('.JFYimage').css({
+			width:'200px',
+		    margin:'auto',
+		    display:'block'
+		});
+		this.$el.find('.JFYafter').css({
+			position:'absolute',
+		    top:'43px',
+		    right:'30px',
+		    width:'225px',
+		    height:'140px',
+		    textAlign:'center',
+		    cursor:'pointer',
+		    paddingTop: '7px'
+		});
+		this.$el.find('label').css({
+			display:'block',
+			fontSize:'12px',
+		});
+		this.$el.find('input').css({
+			display:'block',
+			fontSize:'12px',
+			width:'250px',
+			border:'1px solid black',
+		});
+		this.$el.find('textarea').css({
+			display:'block',
+			fontSize:'12px',
+			width:'250px',
+			height:'160px',
+			border:'1px solid black',
+		});
+		this.$el.find('.JFYfooter').css({
+			paddingLeft:'15px'
+		});
+	},
 	onDiscard:function() {
-		this.close();
+		app.editor.close();
 		app.editor = null;
-		delete this;
+		delete app.editor;
+	},
+	onSave:function() {
+		chrome.runtime.sendMessage({ 
+			type: 'saveRecipe', 
+			name: this.$el.find('#editRecipeName').val(),
+			imageUrl: this.$el.find('img').attr('src'),
+			ingredients: this.$el.find('#editRecipeIngredients').val().replace(/(?:\r\n|\r|\n)/g, '<br />'),
+			directions: this.$el.find('#editRecipeDirections').val().replace(/(?:\r\n|\r|\n)/g, '<br />'),
+			source: window.location.href
+		}, function(response) {
+			console.log(response);
+			app.editor.close();
+			app.editor = null;
+			delete app.editor;
+		});
 	}
 })
 

@@ -1,64 +1,38 @@
-<script type="text/template" id="#window-tmpl">
-    <div style='position: fixed; right:20px; top:30px; width:300px; height:400px; border:1px solid black'>
-        <div id="editRecipe">
-            <div class="thumbnail">
-                <a class="close pull-right mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect ">
-                    <i class="material-icons">highlight_off</i>
-                </a>
-                <div>
-                    <label for="editRecipeName" class="name"><%_ Name %></label>
-                    <input id="editRecipeName" name="name" class="form-control name" placeholder="<%_ placeholder_recipe_name %>" value="">
-                </div>
-                <div class="thumbnail image-container">
-                    <img src="https://s3.amazonaws.com/cookbookimg/NoImage.jpg" class="image">
-                    <div class="after upload_image dropbox" id="dropbox"><i class="material-icons">camera_alt</i></div>
-                </div>
-                <label for="editRecipeDescription" class="">
-                    <%_ Description %>
-                </label>
-                <textarea name="editRecipeDescription" id="editReciptDescription" class="editable description" rows="3" required="required" placeholder="<%_ placeholder_recipe_desc %>">
-                </textarea>
-                <label for="editRecipeIngredients" class="">
-                    <%_ Ingredients %>
-                </label>
-                <textarea name="editRecipeIngredients" id="editRecipeIngredients" class="editable ingredients" rows="5" required="required" placeholder="<%_ placeholder_recipe_ingr %>">
-                </textarea>
-                <label for="editRecipePrepTime" class="">
-                    <%_ editRecipePrepTime %>
-                </label>
-                <input id="editRecipePrepTime" class="time" type="number" value="">
-                <label for="editRecipeCookTime" class="">
-                    <%_ editRecipeCookTime %>
-                </label>
-                <input id="editRecipeCookTime" class="time" type="number" value="">
-                <label for="editRecipeMakeTime" class="">
-                    <%_ editRecipeMakeTime %>
-                </label>
-                <input id="editRecipeMakeTime" class="time" type="number" value="">
-                <div>
-                    <label for="editRecipeDirections" class="">
-                        <%_ Directions %>
-                    </label>
-                    <textarea name="editRecipeDirections" id="editReciptDirections" class="editable directions" rows="10" required="required" placeholder="<%_ placeholder_recipe_dir %>">
-                    </textarea>
-                </div>
-                <label id="editRecipePostFacebook" for="switch-postfacebok" class="mdl-switch mdl-js-switch mdl-js-ripple-effect">
-                    <input type="checkbox" id="switch-postfacebok" class="mdl-switch__input" 
-                    <span class="mdl-switch__label">Share to Facebook</span>
-                </label>
-                <label for="editRecipeLabels" class="">
-                    <%_ Labels %>
-                </label>
-                <div class="labelGroups"></div>
-                <div id="editRecipeLabels"></div>
-                <div class="footer">
-                    <button id="btnEditRecipeDiscard" type="button" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">
-                        <%_ Discard %>
-                    </button>
-                    <button id="btnEditRecipeSave" type="button" class="pull-right mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">
-                        <%_ Save %>
-                    </button>
-                </div>
+<script type="text/template" id="window">
+    <div>
+        <img src="<%- iconUrl %>" class="JFYicon"><title>Just Food You - Import recipe</title>
+        <div class="JFYeditRecipe">
+            <div>
+                <!--<label><%_ Name %></label>-->
+                <input id="editRecipeName" name="name" placeholder="<%_ placeholder_recipe_name %>" value="">
             </div>
+
+            <div class='imgCont'>
+                <img src="<%- noImageUrl %>" width:300 class="JFYimage">
+                <div class="JFYafter JFYdropbox">drop image here</div>
+            </div>
+            <div class="JFYContent">
+                <!--<label for="editRecipeIngredients"><%_ Ingredients %></label>-->
+                <textarea name="editRecipeIngredients" id="editRecipeIngredients" rows="5" required="required" placeholder="Copy ingredients here!"></textarea>
+    <!--
+                <label for="editRecipePrepTime"><%_ editRecipePrepTime %></label>
+                <input id="editRecipePrepTime" type="number" value="">
+
+                <label for="editRecipeCookTime"><%_ editRecipeCookTime %></label>
+                <input id="editRecipeCookTime" type="number" value="">
+
+                <label for="editRecipeMakeTime"><%_ editRecipeMakeTime %></label>
+                <input id="editRecipeMakeTime" type="number" value="">
+    -->
+                <div>
+                    <!--<label for="editRecipeDirections"><%_ Directions %></label>-->
+                    <textarea name="editRecipeDirections" id="editRecipeDirections" rows="10" required="required" placeholder="Copy direction here!"></textarea>
+                </div>
+            </dic>
         </div>
+        <div class="JFYfooter">
+            <button id="btnEditRecipeDiscard" type="button"><%_ Discard %></button>
+            <button id="btnEditRecipeSave" type="button"><%_ Save %></button>
+        </div>
+    </div>
 </script>

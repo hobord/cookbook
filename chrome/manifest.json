@@ -2,7 +2,7 @@
     "manifest_version": 2,
     "name"        : "Just Food You clipper",
     "description" : "Help grab recipe to www.justfoodyou.com",
-    "version"     : "0.1",
+    "version"     : "0.1.3",
     "icons": { 
         "16"  : "icon_16.jpg",
         "32"  : "icon_32.png",
@@ -17,7 +17,7 @@
         "http://*/*",
         "https://*/*"
     ],  
-    "content_security_policy": "script-src 'self' https://graph.facebook.com https://*.facebook.com https://connect.facebook.net; object-src 'self'; ",
+    "content_security_policy": "script-src 'self'; object-src 'self'; ",
     "externally_connectable": {
         "ids": [
           "iehpofechmihgfphjmggfieaoandaena"
@@ -28,11 +28,11 @@
         "accepts_tls_channel_id": true
     },
 
-    "options_page": "options.html",
     "web_accessible_resources": [
         "icon_16.jpg",        
+        "icon_32.png",        
+        "NoImage.jpg",        
         "images/*",
-        "css/*",
         "templates.html"
     ],
     "browser_action": {
@@ -41,9 +41,6 @@
     "content_scripts": [
         {
             "matches" : ["http://*/*", "https://*/*"],
-            "css": [
-                "css/style.css"
-            ],
             "js" : [
                 "jquery.min.js",
                 "franc.js",
