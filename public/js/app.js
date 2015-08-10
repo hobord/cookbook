@@ -116,6 +116,10 @@ var s, app = {
     	}
     	app.google.analytics.start(userID);
     },
+    reinit: function() {
+		Backbone.history.stop();
+		this.init();
+    },
     setAppLocale: function(localeCode) {
     	if(!localeCode) {
     		if ($.cookie('localeCode')) {
@@ -141,11 +145,13 @@ var s, app = {
     	if(app.loginedUser) {
     		app.loginedUser.set('locale',localeCode);
     		app.loginedUser.save().then(function(){
-    			location.reload();
+    			// location.reload();
+    			app.reinit();
     		});
     	}
     	else {
-    		location.reload();
+    		// location.reload();
+    		app.reinit();
     	}
     },
     loadRemoteTemplates: function(callback) {
@@ -351,7 +357,8 @@ var s, app = {
 			app.loginedUser.set('inited', true);
 			app.loginedUser.save().then(function() {
 		    	Parse.Cloud.run('initUser')
-		    	location.reload();
+		    	// location.reload();
+		    	app.reinit();
 			});
 	    },
 	    loadFavoritedRecipes: function() {
@@ -980,7 +987,8 @@ var s, app = {
 		logout: function(e) {
 			app.google.analytics.sendEvent('user', 'logout', 'logout');
 			Parse.User.logOut();
-			location.reload();
+			// location.reload();
+			app.reinit();
 		},
 		onGoProfile: function(event) {
 			if(app.recipesFiltermanager.get('user')) {
@@ -2217,7 +2225,8 @@ var s, app = {
 													app.loginedUser.set('email',   fuser.get('email'));
 													// app.loginedUser.set("locale", fuser.get('locale'));
 													app.loginedUser.save().then(function(){
-														location.reload();
+														// location.reload();
+														app.reinit();
 													});	
 												});
 									        }
@@ -2237,7 +2246,8 @@ var s, app = {
 												app.loginedUser.set('email',   fuser.get('email'));
 												app.loginedUser.set("profileLink", fuser.get('link'));
 												app.loginedUser.save().then(function(){
-													location.reload();
+													// location.reload();
+													app.reinit();
 												});	
 											});
 								        }

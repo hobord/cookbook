@@ -132,7 +132,7 @@ function decodeFragment(escaped_fragment) {
 function generate_xml_sitemap(recipes) {
     var root_path = 'http://www.justfoodyou.com/';
     var priority = 0.5;
-    var freq = 'monthly';
+    var freq = 'daily' //'monthly';
     var xml = '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
     for (var i in recipes) {
     	var d = new Date(recipes[i].updatedAt);
@@ -202,7 +202,16 @@ cloudApp.get('/', function(req, res) {
 		res.render('index');
 	}
 });
-
+cloudApp.post('/', function(req, res) {
+	res.render('index');
+});
+cloudApp.post('/fbcanavas', function(req, res) {
+	// m.facebook.com/v2.3/dialog/oauth?access_token=xxxx&app_id=890469204379378&client_id=890469204379378&display=touch&domain=www.justfoodyou.com&e2e=%7B%7D&locale=en_US&origin=2&redirect_uri=http%3A%2F%2Fstatic.ak.facebook.com%2Fconnect%2Fxd_arbiter%2FBhKMRj1sUPu.js%3Fversion%3D41%23cb%3Df6ae80368%26domain%3Dwww.justfoodyou.com%26origin%3Dhttp%253A%252F%252Fwww.justfoodyou.com%252Ff3ce6908a8%26relation%3Dopener%26frame%3Dfcaa62d4&response_type=token%2Csigned_request&scope=public_profile%2Cemail%2Cuser_birthday%2Cuser_hometown%2Cuser_location%2Cpublish_actions%2Cuser_likes&sdk=joey&version=v2.3
+	// if (req.body && req.body['signed_request']) {
+	//     res.redirect(indexPage + '?signed_request=' + req.body['signed_request']);
+	// }
+	res.redirect("/");
+})
 cloudApp.get('/recipe', function(req, res) {
 //http://www.justfoodyou.com/recipe?_escaped_fragment_=id=wIn6t5mXHA
 	if (req.param("_escaped_fragment_")) {

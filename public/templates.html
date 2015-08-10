@@ -146,6 +146,11 @@
       <a class="close pull-right">
         <i class="material-icons">cancel</i>
       </a>
+      <% if ( Parse.User.current() && user.objectId == Parse.User.current().id ) {  %>
+      <a class="btnEdit pull-right">
+        <i class="material-icons">create</i>
+      </a>
+      <% } %>
     </div>
     <div id="facebook"><div class="fb-comments" data-href="http://www.justfoodyou.com/#recipe/r-<%= id %>" data-width="100%" data-numposts="5"></div></div>
 

@@ -107,7 +107,9 @@
             appId      : app.settings.facebookAppId, // Facebook App ID
             // status     : false,  // check Facebook Login status
             cookie     : true,  // enable cookies to allow Parse to access the session
-            xfbml      : true,  // initialize Facebook social plugins on the page
+            xfbml      : true,  // initialize Facebook social plugins on the page,
+            channelUrl : '/channel.html',
+            oauth : true,
             version    : 'v2.3' // point to the latest Facebook Graph API version
           });
           FB.getLoginStatus();

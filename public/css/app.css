@@ -363,6 +363,10 @@ div.mdl-navigation{
 .mdl-card__menu .close i {
   color: #FF6D00;
 }
+.btnEdit i {
+  color: #FF6D00;
+  cursor: pointer;
+}
 .recipeListItem .recipe-short-desc {
 	padding-top:0px;
 	height: 70px;

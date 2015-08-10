@@ -52,7 +52,7 @@ app = {
 	},
 	createRecipe: function(data, callBack) {
 		if (Parse.User.current()) {
-			var recipe = new app.Recipe({
+			app.recipe = new app.Recipe({
 				name          : data.name, 
 				user          : Parse.User.current(),
 				coverImageUrl : data.imageUrl, 
@@ -61,24 +61,26 @@ app = {
 				directions    : data.directions, 
 				source        : data.source	
 			})
-			recipe.makeSearchMasks();
-			recipe.setPrivateAcl();
-			recipe.save().then(function(recipe) {
+			app.recipe.makeSearchMasks();
+			app.recipe.setPrivateAcl();
+			app.recipe.save().then(function(recipe) {
 				recipe.uploadImage(recipe.get('coverImageUrl'));
-				recipe.set('coverImageUrl', recipe.getImageUrl());
+				recipe.set('coverImageUrl', recipe.getImageUrl(), function() {
+					chrome.windows.create({
+					    type : 'popup',
+					    url : app.recipe.getUrl(),
+					    type: "popup"
+					}, function(newWindow) {
+
+					});
+				});
 				recipe.save();
 
 				callBack({recipeId: recipe.id, recipeUrl:recipe.getUrl()})
-				chrome.windows.create({
-				    type : 'popup',
-				    url : recipe.getUrl(),
-				    type: "popup"
-				}, function(newWindow) {
-
-				});
 			});
 		}
 		else {
+			callBack({recipeId: null, recipeUrl:null, fail:'nologin'})
 			alert("please login first!");
 			chrome.windows.create({
 			    type : 'popup',

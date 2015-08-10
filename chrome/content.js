@@ -108,6 +108,7 @@ app.EditRecipeView =  Backbone.View.extend({
 	},
 	setDesign: function() {
 		this.$el.css({
+			all: 'initial',
 			position:'fixed',
 			right:'20px',
 			top:'30px',
@@ -125,7 +126,7 @@ app.EditRecipeView =  Backbone.View.extend({
 			float:'left',
 		    position:'absolute',
 		    width:'24px',
-		    marginLeft:'8px',
+		    left:'8px',
 		})
 		this.$el.find('title').css({
 		    fontSize:'19px',
@@ -192,7 +193,7 @@ app.EditRecipeView =  Backbone.View.extend({
 		chrome.runtime.sendMessage({ 
 			type: 'saveRecipe', 
 			name: this.$el.find('#editRecipeName').val(),
-			imageUrl: this.$el.find('img').attr('src'),
+			imageUrl: this.$el.find('.JFYimage').attr('src'),
 			ingredients: this.$el.find('#editRecipeIngredients').val().replace(/(?:\r\n|\r|\n)/g, '<br />'),
 			directions: this.$el.find('#editRecipeDirections').val().replace(/(?:\r\n|\r|\n)/g, '<br />'),
 			source: window.location.href
