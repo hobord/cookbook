@@ -28,15 +28,19 @@ var s, app = {
 		applicationUrl   : 'http://www.justfoodyou.com/'
     },
     templates: {
-		// 'application'          : '#application-tmpl',
-		// 'viewRecipe'           : '#viewRecipe-tmpl',
-		// 'editRecipe'           : '#editRecipe-tmpl',
-		// 'recipeListItem'       : '#recipeListItem-tmpl',
-		// 'navigationLabel'      : '#navigationLabel-tmpl',
-		// 'navigationLabelGroup' : '#navigationLabelGroup-tmpl',
-		// 'followedUserList'	   : '#followedUserList-tmpl',
-		// 'followedUserItem'	   : '#followedUserItem-tmpl',
-		// 'googleAdsCard'		   : '#googleAdsCard-tmpl'
+    },
+    editorConfig: function() {
+    	config = {};
+		config.toolbarGroups = [
+			{ name: 'basicstyles', groups: [ 'basicstyles', 'cleanup' ] },
+			{ name: 'paragraph', groups: [ 'list', 'indent', 'blocks', 'align', 'bidi', 'paragraph' ] },
+			{ name: 'clipboard', groups: [ 'clipboard', 'undo' ] },
+			{ name: 'tools', groups: [ 'tools' ] },
+			{ name: 'document', groups: [ 'mode', 'document', 'doctools' ] }
+		];
+
+		config.removeButtons = 'Styles,Format,Font,FontSize,TextColor,BGColor,About,Image,Flash,Table,HorizontalRule,Smiley,SpecialChar,PageBreak,Iframe,JustifyLeft,JustifyCenter,JustifyRight,JustifyBlock,Blockquote,CreateDiv,Form,Checkbox,Radio,TextField,Textarea,Select,Button,ImageButton,HiddenField,SelectAll,Templates,Save,Preview,Print,NewPage,Find,Replace,Scayt,Link,Unlink,Anchor,Cut,Copy,Undo,Redo';
+		return config;
     },
     labelCollection: null,
     loginedUser: null, //User.labelCollection = null
@@ -55,17 +59,6 @@ var s, app = {
 		this.applicationView  = new this.ApplicationView();
 		this.loginedUser = null;
     	this.facebookUser = null;
-
-		// Parse.initialize(s.applicationId, s.applicationKey);
-		// window.fbAsyncInit = function() {
-		//     Parse.FacebookUtils.init({ // this line replaces FB.init({
-		//       appId      : s.facebookAppId, // Facebook App ID
-		//       status     : true,  // check Facebook Login status
-		//       cookie     : true,  // enable cookies to allow Parse to access the session
-		//       xfbml      : true,  // initialize Facebook social plugins on the page
-		//       // version    : 'v2.3' // point to the latest Facebook Graph API version
-		//     });
-		// }
 
 		// Models
 		this.Ingredient      = Parse.Object.extend("Ingredient");
@@ -1303,21 +1296,26 @@ var s, app = {
 		        }
 		    }
 
-			var editor = new MediumEditor('.editable', {
-				toolbar: {
-			        buttons: ['bold', 'italic', 'underline', 'strikethrough', 'quote', 'subscript', 'subscript', 
-			        	'orderedlist', 'unorderedlist', 'indent', 'outdent', 'h2', 'h3',  'removeFormat'],
-		        	static: true
-			    },
-			    imageDragging: false,
-			    paste: {
-			        forcePlainText: false,
-			        cleanPastedHTML: true,
-			        cleanReplacements: [],
-			        cleanAttrs: ['class', 'style', 'id', 'on', 'onclick', 'src', 'href'],
-			        cleanTags: ['meta', 'script', 'img']
-			    }
-			});
+			// var editor = new MediumEditor('.editable', {
+			// 	toolbar: {
+			//         buttons: ['bold', 'italic', 'underline', 'strikethrough', 'quote', 'subscript', 'subscript', 
+			//         	'orderedlist', 'unorderedlist', 'indent', 'outdent', 'h2', 'h3',  'removeFormat'],
+		 //        	static: true
+			//     },
+			//     imageDragging: false,
+			//     paste: {
+			//         forcePlainText: false,
+			//         cleanPastedHTML: true,
+			//         cleanReplacements: [],
+			//         cleanAttrs: ['class', 'style', 'id', 'on', 'onclick', 'src', 'href'],
+			//         cleanTags: ['meta', 'script', 'img']
+			//     }
+			// });
+
+			CKEDITOR.replace( 'editReciptDescription', app.editorConfig() );
+			CKEDITOR.replace( 'editRecipeIngredients', app.editorConfig() );
+			CKEDITOR.replace( 'editReciptDirections', app.editorConfig() );
+
 			try {
 				componentHandler.upgradeAllRegistered(); // material design lite update components/fix sizes
 			} catch(e) {}
@@ -1406,9 +1404,9 @@ var s, app = {
 			};
 			this.model.set({ 
 				labels      : selectedLabels,
-				description : $('#editRecipe .description').html(),
-				ingredients : $('#editRecipe .ingredients').html(),
-				directions  : $('#editRecipe .directions').html(),
+				description :  CKEDITOR.instances.editReciptDescription.getData(),
+				ingredients :  CKEDITOR.instances.editRecipeIngredients.getData(),
+				directions  :  CKEDITOR.instances.editReciptDirections.getData(),
 				private     : $('#switch-private')[0].checked
 			}, { validate: true }  );
 			this.model.makeSearchMasks();

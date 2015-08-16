@@ -2,7 +2,7 @@
     "manifest_version": 2,
     "name"        : "Just Food You clipper",
     "description" : "Help grab recipe to www.justfoodyou.com",
-    "version"     : "0.1.8",
+    "version"     : "0.1.9",
     "icons": { 
         "16"  : "icon_16.jpg",
         "32"  : "icon_32.png",

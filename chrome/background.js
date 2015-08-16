@@ -13,6 +13,7 @@ background = {
 
     	app.loginedUser = Parse.User.current();
 
+    	// Chrome Actionbar
     	chrome.browserAction.onClicked.addListener(function(tab) { 
 			chrome.tabs.sendMessage(tab.id, {message: "popup"}, function(response) {
 				console.log(response);
@@ -38,6 +39,7 @@ background = {
 	        }
 	        return true;
     	})
+
     	// chrome external messaging...
 		chrome.runtime.onMessageExternal.addListener( function(request, sender, callBack) {
 			switch (request.type)
@@ -95,8 +97,7 @@ app = {
 			});
 		}
 		else {
-			callBack({recipeId: null, recipeUrl:null, fail:'nologin'})
-			alert("please login first!");
+			alert("please login in JustFoodYou!");
 			chrome.windows.create({
 			    type : 'popup',
 			    url : 'http://www.justfoodyou.com',
@@ -104,6 +105,9 @@ app = {
 			}, function(newWindow) {
 
 			});
+			try {
+				callBack({recipeId: null, recipeUrl:null, fail:'nologin'})
+			} catch(e) {}
 		}
 	}
 }
