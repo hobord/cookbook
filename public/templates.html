@@ -41,9 +41,7 @@
       <img src="<% if (recipe.coverImageUrl) { print(recipe.coverImageUrl) } else { print('https://s3.amazonaws.com/cookbookimg/NoImage.jpg') } %>" alt="<%= recipe.name %>" title="<%= recipe.name %>" class="image" itemprop="image">
     </div>
     <% if (recipe.makeTime) { %><div class="makeTime"><%_ makeTime %><%= recipe.makeTime %></div><% } %>
-    <div class="mdl-card__supporting-text recipe-short-desc" itemprop="about">
-      <%= recipe.description %>
-    </div>
+    
     <div class="labels mdl-card--border">
 
     </div>

@@ -27,6 +27,14 @@ background = {
 					app.createRecipe(request, callBack)
 		        	return true;
 		        	break;
+		        case "close":
+		        	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+				        chrome.tabs.sendMessage(tabs[0].id, {message: "close"}, function(response) {
+							// console.log(response);
+						});
+				    })
+					return true;
+		        	break;
 	        }
 	        return true;
     	})
@@ -51,12 +59,15 @@ app = {
 		window.location.reload();
 	},
 	createRecipe: function(data, callBack) {
+		callBack = callBack;
 		if (Parse.User.current()) {
 			app.recipe = new app.Recipe({
 				name          : data.name, 
 				user          : Parse.User.current(),
 				coverImageUrl : data.imageUrl, 
-				// description   : data.description, 
+				prepTime      : data.prepTime,
+				cookTime      : data.cookTime,
+				makeTime      : data.makeTime,
 				ingredients   : data.ingredients, 
 				directions    : data.directions, 
 				source        : data.source	
@@ -76,7 +87,11 @@ app = {
 				});
 				recipe.save();
 
-				callBack({recipeId: recipe.id, recipeUrl:recipe.getUrl()})
+				try {
+					callBack({recipeId: recipe.id, recipeUrl:recipe.getUrl()})
+				} catch(e) {}
+
+
 			});
 		}
 		else {

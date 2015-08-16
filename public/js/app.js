@@ -181,11 +181,11 @@ var s, app = {
     	$('.appSpinner').removeClass('is-active');
     },
     switchLayout: function(layout) {
-    	this.currentLayout = layout;
-
-    	if (layout!='list') {
+    	if (layout!='list' && this.currentLayout=='list') {
 	    	app.tempScrollTop = $("main").scrollTop();
     	}
+    	this.currentLayout = layout;
+
 
     	var zones = ['recipeResultsList', 'viewRecipe', 'editRecipe' ]
     	zones.forEach(function(element, index, array){ 

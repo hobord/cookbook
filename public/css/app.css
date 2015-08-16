@@ -367,13 +367,13 @@ div.mdl-navigation{
   color: #FF6D00;
   cursor: pointer;
 }
-.recipeListItem .recipe-short-desc {
+/*.recipeListItem .recipe-short-desc {
 	padding-top:0px;
 	height: 70px;
   width: 100%;
   max-width: 350px;
   overflow: hidden;
-}
+}*/
 .recipe-card-content .app-avatar-small {
 	cursor:pointer;	
 }

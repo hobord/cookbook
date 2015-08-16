@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="">
+	<head>
+		<meta charset="utf-8">
+		<title>Just Food You Clipper</title>
+
+		<!-- Bootstrap CSS -->
+		<link href="bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
+		<style type="text/css">
+			body {
+				background:none transparent;
+				overflow: hidden; 
+			}
+			form {
+				padding: 0px;
+				margin: 0px;
+				overflow: hidden; 
+			}
+			.form-control {
+				padding: 0px;
+			}
+			.JFYicon {
+				margin-right: 15px;	
+				width: 18px;
+			}
+			.JFYeditRecipe {
+				height: 100%;
+			}
+			.JFYimgCont{
+				width: 250px;
+				height: 150px;
+			    position: relative;
+			    overflow: hidden;
+			    margin: auto;
+			}
+			.JFYimage{
+				position: absolute;
+			    width: 100%;
+			    display: block;
+			    top: 0;
+			    bottom: 0;
+			    left: 0;
+			    right: 0;
+			    margin: auto;
+			    border: 1px solid #ddd;
+			}
+			.JFYafter{
+				position:absolute;
+			    top:0px;
+			    right:0px;
+			    width:100%;
+			    height:250px;
+			    text-align:center;
+			    cursor:pointer;
+			    padding-top: 7px;
+			}
+			.cont {
+				height: 325px;
+				padding: 0px;
+				margin: 0px;
+				width: 100%;	
+			}
+			.vertical-scroll {
+				width: 100%;
+				padding: 0px;
+				margin: 0px;
+			    height: 100%;
+			    overflow-y: auto;
+			    overflow-x: hidden; 
+			}
+			textarea.form-control {
+			    height: 190px;
+			}
+		</style>
+	</head>
+	<body>
+		<form class="">
+	        <div class="JFYeditRecipe panel panel-success">
+				<div class="panel-heading draggable"><img src="icon_32.png" class="JFYicon">Just Food You Clipper</div>
+				<div class="">
+		            <div>
+		                <input class="col-xs-12 col-sm-12 col-md-12 col-lg-12 form-control" id="editRecipeName" name="name" placeholder="Recipe name" value="">
+		            </div>
+		            <div class='JFYimgCont'>
+		                <img src="NoImage.jpg" class="JFYimage" id="JFYimage">
+		                <div class="JFYafter JFYdropbox">Drop image here!</div>
+		            </div>
+		            <div class="cont">
+			            <div class="vertical-scroll">
+				            <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 ">
+				                <textarea class="col-xs-12 col-sm-12 col-md-12 col-lg-12 form-control" name="editRecipeIngredients" id="editRecipeIngredients" rows="5" required="required" placeholder="Copy ingredients here!"></textarea>
+				    		</div>
+				    		<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 ">
+				                <div class="col-xs-4 col-sm-4 col-md-4 col-lg-4">
+				                	<label for="editRecipePrepTime">Prep. time</label>
+				                	<input class="form-control"id="editRecipePrepTime" type="number" value="">
+				                </div>
+				                <div class="col-xs-4 col-sm-4 col-md-4 col-lg-4">
+				                	<label for="editRecipeCookTime">Cook time</label>
+				                	<input class="form-control"id="editRecipeCookTime" type="number" value="">
+				                </div>
+				                <div class="col-xs-4 col-sm-4 col-md-4 col-lg-4">
+				                	<label for="editRecipeMakeTime">Make time</label>
+				                	<input class="form-control"id="editRecipeMakeTime" type="number" value="">
+				                </div>
+				    		</div>
+				    		<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 ">
+			                    <textarea class="col-xs-12 col-sm-12 col-md-12 col-lg-12 form-control" name="editRecipeDirections" id="editRecipeDirections" rows="5" required="required" placeholder="Copy direction here!"></textarea>
+				            </div>
+			            </div>
+		            </div>
+		        </div>
+		        <div class="panel-footer">
+		            <button class="btn btn-danger pull-left" id="btnEditRecipeDiscard" type="button">Discard</button>
+		            <button class="btn btn-primary pull-right" id="btnEditRecipeSave" type="button">Save</button>
+		            <div class="clearfix"></div>
+		        </div>
+			</div>
+		</form>
+		<!-- jQuery -->
+		<script type="text/javascript" src="jquery.min.js"></script>
+		<!-- Bootstrap JavaScript -->
+		<script type="text/javascript" src="bootstrap/3.3.5/js/bootstrap.min.js"></script>
+		<script type="text/javascript" src="clipper.js"></script>
+	</body>
+</html>
