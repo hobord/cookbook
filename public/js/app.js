@@ -38,8 +38,8 @@ var s, app = {
 			{ name: 'tools', groups: [ 'tools' ] },
 			{ name: 'document', groups: [ 'mode', 'document', 'doctools' ] }
 		];
-
-		config.removeButtons = 'Styles,Format,Font,FontSize,TextColor,BGColor,About,Image,Flash,Table,HorizontalRule,Smiley,SpecialChar,PageBreak,Iframe,JustifyLeft,JustifyCenter,JustifyRight,JustifyBlock,Blockquote,CreateDiv,Form,Checkbox,Radio,TextField,Textarea,Select,Button,ImageButton,HiddenField,SelectAll,Templates,Save,Preview,Print,NewPage,Find,Replace,Scayt,Link,Unlink,Anchor,Cut,Copy,Undo,Redo';
+		config.skin = 'minimalist,/ckeditor/skins/minimalist/';
+		config.removeButtons = 'Styles,Format,Font,FontSize,TextColor,BGColor,About,Image,Flash,Table,HorizontalRule,Smiley,SpecialChar,PageBreak,Iframe,JustifyLeft,JustifyCenter,JustifyRight,JustifyBlock,Blockquote,CreateDiv,Form,Checkbox,Radio,TextField,Textarea,Select,Button,ImageButton,HiddenField,SelectAll,Templates,Save,Preview,Print,NewPage,Find,Replace,Scayt,Link,Unlink,Anchor,Cut,Copy,Undo,Redo,Language,Source';
 		return config;
     },
     labelCollection: null,
@@ -966,6 +966,7 @@ var s, app = {
 			this.$el.html(html);
 
 			$('#btnLng').text(app.localeCode);
+			app.google.adsense.render();
 			try {
 				componentHandler.upgradeAllRegistered(); // material design lite update components/fix sizes
 			} catch(e) {}
@@ -1164,7 +1165,7 @@ var s, app = {
 
 			// 
 			try {FB.XFBML.parse(this.el);} catch (e) {}
-			(adsbygoogle = window.adsbygoogle || []).push({});
+			app.google.adsense.render();
 			return this;
 		},
 		onPrint: function() {
@@ -1595,13 +1596,12 @@ var s, app = {
 		},
 		render: function() {
 			var $list = this.$el.empty();
+
+			$list.append(this.renderAdTop());
+			// app.google.adsense.render();
+
 			var counter = 0;
 			this.collection.each(function(model) {
-				// if(counter==2) {
-				// 	$list.append(this.renderAd());
-				// }
-				// else {
-				// }
 				this.renderOne(model);
 				counter++;
 				if(counter % 2 == 0) {
@@ -1611,12 +1611,18 @@ var s, app = {
 					$list.append('<div class="clearfix visible-lg-block"></div>');
 				}
 		    }, this);
-			// (adsbygoogle = window.adsbygoogle || []).push({});
+
+			app.google.adsense.render();
+			$list.append(this.renderAdFooter());
 			// try {FB.XFBML.parse(this.el);} catch (e) {}
 			return this;
 		},
-		renderAd: function() {
-			var template = _.template(app.templates.googleAdsCard);
+		renderAdTop: function() {
+			var template = _.template(app.templates.googleAdsTop);
+			return template();
+		},
+		renderAdFooter: function() {
+			var template = _.template(app.templates.googleAdsTopFooter);
 			return template();
 		},
 		renderOne: function(model) {
@@ -1859,7 +1865,7 @@ var s, app = {
 			'editRecipeMakeTime'      : ', sum make time: ',
 			'makeTime'				  : 'Make time (minute):',
 			'AllinJustFoodYou'				  : 'All in Just Food You',
-			'FavoritedPeople'		  : 'Friends',
+			'FavoritedPeople'		  : 'Following',
 			'originalWriter'		  : 'Original writer',
 			'CreateLabelGroup'		  : 'Create label group',
 			'CreateLabel'		      : 'Create label',
@@ -2300,6 +2306,13 @@ var s, app = {
 	} // app.facebook
 // Google ==================================================================================================================
 	app.google = {}
+	app.google.adsense = {
+		render: function() {
+			try {
+				(adsbygoogle = window.adsbygoogle || []).push({});
+			} catch (e) {}
+		}
+	}
 	app.google.analytics = {
 		start: function(userID) {
 			try {
